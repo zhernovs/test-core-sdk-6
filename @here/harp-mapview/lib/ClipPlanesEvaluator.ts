@@ -831,11 +831,13 @@ export class TiltViewClipPlanesEvaluator extends TopViewClipPlanesEvaluator {
         const cameraAltitude = this.getCameraAltitude(camera, projection);
         viewRanges.near = cameraAltitude - this.maxElevation;
 
-        // Take fov directly if it is vertical, otherwise we translate it using aspect ratio:
-        const aspect = camera.aspect > 1 ? camera.aspect : 1 / camera.aspect;
-        const halfFovAngle = THREE.MathUtils.degToRad((camera.fov * aspect) / 2);
+        let halfFovAngle = 1.0;
 
         if (camera instanceof THREE.PerspectiveCamera) {
+            // Take fov directly if it is vertical, otherwise we translate it using aspect ratio:
+            const aspect = camera.aspect > 1 ? camera.aspect : 1 / camera.aspect;
+            halfFovAngle = THREE.MathUtils.degToRad((camera.fov * aspect) / 2);
+
             // Now we need to account for camera tilt and frustum volume, so the longest
             // frustum edge does not intersects with sphere, it takes the worst case
             // scenario regardless of camera tilt, so may be improved little bit with more

@@ -75,6 +75,7 @@ import { ThemeLoader } from "./ThemeLoader";
 import { Tile, TileFeatureData, TileObject } from "./Tile";
 import { MapViewUtils } from "./Utils";
 import { ResourceComputationType, VisibleTileSet, VisibleTileSetOptions } from "./VisibleTileSet";
+import { ViewIntersection } from "./ViewIntersection";
 
 declare const process: any;
 
@@ -694,7 +695,7 @@ export class MapView extends THREE.EventDispatcher {
 
     private readonly m_screenCamera = new THREE.OrthographicCamera(-1, 1, 1, -1);
 
-    private readonly m_camera: THREE.PerspectiveCamera;
+    private readonly m_camera: THREE.PerspectiveCamera | THREE.OrthographicCamera;
 
     /**
      * Relative to eye camera.
@@ -702,7 +703,9 @@ export class MapView extends THREE.EventDispatcher {
      * This camera is internal camera used to improve precision
      * when rendering geometries.
      */
-    private readonly m_rteCamera = new THREE.PerspectiveCamera();
+    private readonly m_rteCamera:
+        | THREE.PerspectiveCamera
+        | THREE.OrthographicCamera = new THREE.OrthographicCamera(-1, 1, -1, 1);
 
     private m_focalLength: number;
     private m_targetDistance: number;
@@ -943,12 +946,13 @@ export class MapView extends THREE.EventDispatcher {
         // Initialization of mCamera and mVisibleTiles
         const { width, height } = this.getCanvasClientSize();
         const aspect = width / height;
-        this.m_camera = new THREE.PerspectiveCamera(
-            this.m_options.fovCalculation.fov,
-            aspect,
-            DEFAULT_CAM_NEAR_PLANE,
-            DEFAULT_CAM_FAR_PLANE
-        );
+        // this.m_camera = new THREE.PerspectiveCamera(
+        //     this.m_options.fovCalculation.fov,
+        //     aspect,
+        //     DEFAULT_CAM_NEAR_PLANE,
+        //     DEFAULT_CAM_FAR_PLANE
+        // );
+        this.m_camera = new THREE.OrthographicCamera(-1, 1, 1, -1);
         this.m_camera.up.set(0, 0, 1);
         this.projection.projectPoint(this.m_targetGeoPos, this.m_targetWorldPos);
         this.m_focalLength = 0;
@@ -1455,8 +1459,32 @@ export class MapView extends THREE.EventDispatcher {
     /**
      * The THREE.js camera used by this `MapView` to render the main scene.
      */
-    get camera(): THREE.PerspectiveCamera {
+    get camera(): THREE.PerspectiveCamera | THREE.OrthographicCamera {
         return this.m_camera;
+    }
+
+    /**
+     * The THREE.js camera used by this `MapView` to render the main scene, if it is a
+     * perspectiveCamera.
+     * @Returns `undefined` if the camera is not of type `THREE.PerspectiveCamera`.
+     */
+    get perspectiveCamera(): THREE.PerspectiveCamera | undefined {
+        if (this.m_camera.type !== "PerspectiveCamera") {
+            return undefined;
+        }
+        return this.m_camera as THREE.PerspectiveCamera;
+    }
+
+    /**
+     * The THREE.js camera used by this `MapView` to render the main scene, if it is a
+     * orthographicCamera.
+     * @Returns `undefined` if the camera is not of type `THREE.OrthographicCamera`.
+     */
+    get orthographicCamera(): THREE.OrthographicCamera | undefined {
+        if (this.m_camera.type !== "OrthographicCamera") {
+            return undefined;
+        }
+        return this.m_camera as THREE.OrthographicCamera;
     }
 
     /**
@@ -2547,10 +2575,11 @@ export class MapView extends THREE.EventDispatcher {
      */
     private updateCameras(viewRanges?: ViewRanges) {
         const { width, height } = this.m_renderer.getSize(cache.vector2[0]);
-        this.m_camera.aspect =
-            this.m_forceCameraAspect !== undefined ? this.m_forceCameraAspect : width / height;
-        this.setFovOnCamera(this.m_options.fovCalculation!, height);
-
+        if (this.perspectiveCamera !== undefined) {
+            this.perspectiveCamera.aspect =
+                this.m_forceCameraAspect !== undefined ? this.m_forceCameraAspect : width / height;
+            this.setFovOnCamera(this.m_options.fovCalculation!, height);
+        }
         // When calculating clip planes account for the highest building on the earth,
         // multiplying its height by projection scaling factor. This approach assumes
         // constantHeight property of extruded polygon technique is set as default false,
@@ -2569,15 +2598,22 @@ export class MapView extends THREE.EventDispatcher {
                 ? this.m_visibleTiles.updateClipPlanes(maxGeometryHeightScaled)
                 : viewRanges
         );
-        this.m_camera.near = this.m_viewRanges.near;
-        this.m_camera.far = this.m_viewRanges.far;
 
-        this.m_camera.updateProjectionMatrix();
+        if (this.perspectiveCamera !== undefined) {
+            this.perspectiveCamera.near = this.m_viewRanges.near;
+            this.perspectiveCamera.far = this.m_viewRanges.far;
+            this.perspectiveCamera.updateProjectionMatrix();
+        }
+
         this.m_camera.updateMatrixWorld(false);
 
         // Update the "relative to eye" camera. Copy the public camera parameters
         // and place the "relative to eye" at the world's origin.
-        this.m_rteCamera.copy(this.m_camera);
+        if (this.m_rteCamera.type === "OrthographicCamera") {
+            this.m_rteCamera.copy(this.orthographicCamera!);
+        } else {
+            this.m_rteCamera.copy(this.perspectiveCamera!);
+        }
         this.m_rteCamera.position.setScalar(0);
         this.m_rteCamera.updateMatrixWorld(true);
 
@@ -2953,14 +2989,14 @@ export class MapView extends THREE.EventDispatcher {
         if (currentFrameEvent !== undefined) {
             endTime = PerformanceTimer.now();
 
-            const frameRenderTime = endTime - frameStartTime;
+            const frameRenderTime = endTime! - frameStartTime;
 
             currentFrameEvent.setValue("render.setupTime", setupTime! - frameStartTime);
             currentFrameEvent.setValue("render.cullTime", cullTime! - setupTime!);
             currentFrameEvent.setValue("render.textPlacementTime", textPlacementTime! - cullTime!);
             currentFrameEvent.setValue("render.drawTime", drawTime! - textPlacementTime!);
             currentFrameEvent.setValue("render.textDrawTime", textDrawTime! - drawTime!);
-            currentFrameEvent.setValue("render.cleanupTime", endTime - textDrawTime!);
+            currentFrameEvent.setValue("render.cleanupTime", endTime! - textDrawTime!);
             currentFrameEvent.setValue("render.frameRenderTime", frameRenderTime);
 
             // Initialize the fullFrameTime with the frameRenderTime If we also create geometry in
@@ -3230,17 +3266,31 @@ export class MapView extends THREE.EventDispatcher {
                 ? this.projection.type === ProjectionType.Spherical
                 : this.m_enableMixedLod;
 
-        return new VisibleTileSet(
-            new FrustumIntersection(
-                this.m_camera,
-                this,
-                this.m_visibleTileSetOptions.extendedFrustumCulling,
-                this.m_tileWrappingEnabled,
-                enableMixedLod
-            ),
-            this.m_tileGeometryManager,
-            this.m_visibleTileSetOptions
-        );
+        if (this.perspectiveCamera !== undefined) {
+            return new VisibleTileSet(
+                new FrustumIntersection(
+                    this.perspectiveCamera,
+                    this,
+                    this.m_visibleTileSetOptions.extendedFrustumCulling,
+                    this.m_tileWrappingEnabled,
+                    enableMixedLod
+                ),
+                this.m_tileGeometryManager,
+                this.m_visibleTileSetOptions
+            );
+        } else {
+            return new VisibleTileSet(
+                new ViewIntersection(
+                    this.orthographicCamera!,
+                    this,
+                    this.m_visibleTileSetOptions.extendedFrustumCulling,
+                    this.m_tileWrappingEnabled,
+                    enableMixedLod
+                ),
+                this.m_tileGeometryManager,
+                this.m_visibleTileSetOptions
+            );
+        }
     }
 
     private updateSkyBackground() {
@@ -3563,7 +3613,9 @@ export class MapView extends THREE.EventDispatcher {
             assert(this.m_focalLength !== 0);
             fov = MapViewUtils.calculateFovByFocalLength(this.m_focalLength, height);
         }
-        this.m_camera.fov = this.limitFov(fov, this.m_camera.aspect);
+        if (this.perspectiveCamera !== undefined) {
+            this.perspectiveCamera.fov = this.limitFov(fov, this.perspectiveCamera.aspect);
+        }
     }
 
     /**

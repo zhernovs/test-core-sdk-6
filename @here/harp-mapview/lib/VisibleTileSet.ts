@@ -20,6 +20,8 @@ import { ClipPlanesEvaluator } from "./ClipPlanesEvaluator";
 import { DataSource } from "./DataSource";
 import { ElevationRangeSource } from "./ElevationRangeSource";
 import { FrustumIntersection, TileKeyEntry } from "./FrustumIntersection";
+import { ViewIntersection } from "./ViewIntersection";
+
 import { TileGeometryManager } from "./geometry/TileGeometryManager";
 import { Tile } from "./Tile";
 import { TileOffsetUtils } from "./Utils";
@@ -382,7 +384,7 @@ export class VisibleTileSet {
         ResourceComputationType.EstimationInMb;
 
     constructor(
-        private readonly m_frustumIntersection: FrustumIntersection,
+        private readonly m_frustumIntersection: FrustumIntersection | ViewIntersection,
         private readonly m_tileGeometryManager: TileGeometryManager,
         options: VisibleTileSetOptions
     ) {
@@ -1189,7 +1191,10 @@ export class VisibleTileSet {
         // If elevation is to be taken into account extend view frustum:
         // (near ~0, far: maxVisibilityRange) that allows to consider tiles that
         // are far below ground plane and high enough to intersect the frustum.
-        if (elevationRangeSource !== undefined) {
+        if (
+            elevationRangeSource !== undefined &&
+            this.m_frustumIntersection.camera.type === "PerspectiveCamera"
+        ) {
             this.m_cameraOverride.copy(this.m_frustumIntersection.camera);
             this.m_cameraOverride.near = Math.min(
                 this.m_cameraOverride.near,
