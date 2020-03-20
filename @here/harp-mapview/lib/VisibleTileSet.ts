@@ -373,7 +373,9 @@ export class VisibleTileSet {
     allVisibleTilesLoaded: boolean = false;
     options: VisibleTileSetOptions;
 
-    private readonly m_cameraOverride = new THREE.PerspectiveCamera();
+    private m_cameraOverride:
+        | THREE.PerspectiveCamera
+        | THREE.OrthographicCamera = new THREE.PerspectiveCamera();
     private m_dataSourceCache: DataSourceCache;
     private m_viewRange: ViewRanges = { near: 0.1, far: Infinity, minimum: 0.1, maximum: Infinity };
     // Maps morton codes to a given Tile, used to find overlapping Tiles. We only need to have this
@@ -384,7 +386,7 @@ export class VisibleTileSet {
         ResourceComputationType.EstimationInMb;
 
     constructor(
-        private readonly m_frustumIntersection: FrustumIntersection | ViewIntersection,
+        private readonly m_viewIntersection: FrustumIntersection | ViewIntersection,
         private readonly m_tileGeometryManager: TileGeometryManager,
         options: VisibleTileSetOptions
     ) {
@@ -471,7 +473,7 @@ export class VisibleTileSet {
             this.options.clipPlanesEvaluator.minElevation = minElevation;
         }
         this.m_viewRange = this.options.clipPlanesEvaluator.evaluateClipPlanes(
-            this.m_frustumIntersection.mapView
+            this.m_viewIntersection.mapView
         );
         return this.m_viewRange;
     }
@@ -1191,11 +1193,18 @@ export class VisibleTileSet {
         // If elevation is to be taken into account extend view frustum:
         // (near ~0, far: maxVisibilityRange) that allows to consider tiles that
         // are far below ground plane and high enough to intersect the frustum.
-        if (
-            elevationRangeSource !== undefined &&
-            this.m_frustumIntersection.camera.type === "PerspectiveCamera"
-        ) {
-            this.m_cameraOverride.copy(this.m_frustumIntersection.camera);
+        if (elevationRangeSource !== undefined) {
+            if (this.m_viewIntersection.camera.type === "PerspectiveCamera") {
+                if (this.m_cameraOverride.type !== this.m_viewIntersection.camera.type) {
+                    this.m_cameraOverride = new THREE.PerspectiveCamera();
+                }
+                this.m_cameraOverride.copy(this.m_viewIntersection.camera);
+            } else if (this.m_viewIntersection.camera.type === "OrthographicCamera") {
+                if (this.m_cameraOverride.type !== this.m_viewIntersection.camera.type) {
+                    this.m_cameraOverride = new THREE.OrthographicCamera(-128, 128, -128, 128);
+                }
+                this.m_cameraOverride.copy(this.m_viewIntersection.camera);
+            }
             this.m_cameraOverride.near = Math.min(
                 this.m_cameraOverride.near,
                 this.m_viewRange.minimum
@@ -1205,16 +1214,16 @@ export class VisibleTileSet {
                 this.m_viewRange.maximum
             );
             this.m_cameraOverride.updateProjectionMatrix();
-            this.m_frustumIntersection.updateFrustum(this.m_cameraOverride.projectionMatrix);
+            this.m_viewIntersection.updateFrustum(this.m_cameraOverride.projectionMatrix);
         } else {
-            this.m_frustumIntersection.updateFrustum();
+            this.m_viewIntersection.updateFrustum();
         }
 
         // For each bucket of data sources with same tiling scheme, calculate frustum intersection
         // once using the maximum display level.
         for (const [tilingScheme, bucket] of dataSourceBuckets) {
             const zoomLevels = bucket.map(dataSource => dataSource.getDataZoomLevel(zoomLevel));
-            const result = this.m_frustumIntersection.compute(
+            const result = this.m_viewIntersection.compute(
                 tilingScheme,
                 elevationRangeSource,
                 zoomLevels,
