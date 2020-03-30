@@ -34,6 +34,7 @@ import {
     enableBlending,
     HighPrecisionLineMaterial,
     MapMeshBasicMaterial,
+    MapMeshFlatStandardMaterial,
     MapMeshStandardMaterial,
     SolidLineMaterial
 } from "@here/harp-materials";
@@ -84,6 +85,20 @@ export interface MaterialOptions {
      * recompiling them manually later (ThreeJS does not update fog for `RawShaderMaterial`s).
      */
     fog?: boolean;
+
+    /**
+     * Whether shadows are enabled or not, this is required because we change the material used.
+     */
+    shadowsEnabled?: boolean;
+
+    /**
+     * How strong the shadow should be, 0 means there is no shadow and 1 means it is black, note, if
+     * multiple light sources are to be supported, then this should be an array, however given the
+     * high cost, and that it doesn't make much sense to have multiple light sources to cast
+     * shadows, this is the strength of the first directional light. Only makes sense if
+     * [[shadowsEnabled]] is true.
+     */
+    shadowIntensity?: number;
 }
 
 /**
@@ -100,7 +115,7 @@ export function createMaterial(
     textureReadyCallback?: (texture: THREE.Texture) => void
 ): THREE.Material | undefined {
     const technique = options.technique;
-    const Constructor = getMaterialConstructor(technique);
+    const Constructor = getMaterialConstructor(technique, options.shadowsEnabled === true);
 
     const settings: { [key: string]: any } = {};
 
@@ -113,6 +128,8 @@ export function createMaterial(
         Constructor !== HighPrecisionLineMaterial
     ) {
         settings.fog = options.fog;
+    } else if (Constructor === MapMeshFlatStandardMaterial) {
+        settings.shadowIntensity = options.shadowIntensity;
     }
 
     const material = new Constructor(settings);
@@ -372,8 +389,13 @@ export type MaterialConstructor = new (params?: {}) => THREE.Material;
  * Returns a [[MaterialConstructor]] basing on provided technique object.
  *
  * @param technique [[Technique]] object which the material will be based on.
+ * @param shadowsEnabled Whether the material can accept shadows, this is required for some
+ * techniques to decide which material to create.
  */
-export function getMaterialConstructor(technique: Technique): MaterialConstructor | undefined {
+export function getMaterialConstructor(
+    technique: Technique,
+    shadowsEnabled: boolean
+): MaterialConstructor | undefined {
     if (technique.name === undefined) {
         return undefined;
     }
@@ -397,7 +419,7 @@ export function getMaterialConstructor(technique: Technique): MaterialConstructo
             return SolidLineMaterial;
 
         case "fill":
-            return MapMeshBasicMaterial;
+            return shadowsEnabled ? MapMeshFlatStandardMaterial : MapMeshBasicMaterial;
 
         case "squares":
             return THREE.PointsMaterial;

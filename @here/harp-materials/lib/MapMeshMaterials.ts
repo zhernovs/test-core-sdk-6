@@ -14,6 +14,7 @@ import { DisplacementFeature, DisplacementFeatureParameters } from "./Displaceme
 import { ExtrusionFeatureDefs } from "./MapMeshMaterialsDefs";
 import extrusionShaderChunk from "./ShaderChunks/ExtrusionChunks";
 import fadingShaderChunk from "./ShaderChunks/FadingChunks";
+import { correctShadowChunk } from "./ShaderChunks/ShadowChunks";
 
 const emptyTexture = new THREE.Texture();
 
@@ -58,6 +59,16 @@ export interface ExtrusionFeatureParameters {
      * Should be applied to `polygon` materials using this feature.
      */
     zFightingWorkaround?: boolean;
+}
+
+/**
+ * Parameters used when constructing a [[MapMeshFlatStandardMaterial]].
+ */
+export interface ShadowParameters {
+    /**
+     * How strong the shadow is, 1 means complete black and 0 means no shadow shown.
+     */
+    shadowIntensity?: number;
 }
 
 /**
@@ -1228,6 +1239,84 @@ export class MapMeshStandardMaterial extends THREE.MeshStandardMaterial
         // to be overridden
     }
     // Mixin declarations end -----------------------------------------------------------
+}
+
+/**
+ * Subclass of [[THREE.ShaderMaterial]]. Uses the standard material (used in
+ * MapMeshStandardMaterial) as the base and removes the diffuse / specular components of the
+ * lighting to keep the colors consistent (that aren't in shadow).
+ *
+ * @see [[Tile#addRenderHelper]]
+ */
+export class MapMeshFlatStandardMaterial extends THREE.ShaderMaterial {
+    /**
+     * This is required for three.js to set the correct uniform values (see
+     * WebGLRenderer.js:setProgram), because we are copying the standard material and changing just
+     * the fragment shader. This is a good way to simplify setup of this class.
+     */
+    isMeshStandardMaterial = true;
+
+    /**
+     * Constructs a new `MapMeshFlatStandardMaterial`. Note, the real initialization is done in the
+     * overriden method [[setValues]].
+     *
+     * @param params parameters used to construct the material.
+     */
+    constructor(
+        params?: THREE.MeshStandardMaterialParameters & FadingFeatureParameters & ShadowParameters
+    ) {
+        super(params);
+    }
+
+    setValues(
+        params?: THREE.MeshStandardMaterialParameters & FadingFeatureParameters & ShadowParameters
+    ) {
+        // This doesn't work in the contstructor, because the super(params) call takes the params
+        // and sets them on this object (see the call to setValues in the contstructor), this in
+        // turn calls the get/set methods which require the uniforms, however with Typescript, it
+        // isn't possible to call any method before the call to super(params).
+        this.uniforms = THREE.UniformsUtils.merge([
+            THREE.ShaderLib.standard.uniforms,
+            {
+                shadowIntensity: { value: 1 }
+            }
+        ]);
+        this.extensions.derivatives = true;
+        this.lights = true;
+        this.shadowIntensity = params?.shadowIntensity ?? 0;
+        this.vertexShader = THREE.ShaderChunk.meshphysical_vert;
+        // There are three main changes, we add the shadowIntensity uniform, the
+        // RE_Direct_Physical function is changed to keep a consistent ambient color and the
+        // indirect diffuse / specular components are removed.
+        this.fragmentShader = THREE.ShaderChunk.meshphysical_frag.replace(
+            "#include <lights_physical_pars_fragment>",
+            correctShadowChunk
+        );
+
+        if (params !== undefined) {
+            super.setValues(params);
+        }
+    }
+
+    get color(): THREE.Color {
+        return this.uniforms.diffuse.value;
+    }
+    set color(value: THREE.Color) {
+        this.uniforms.diffuse.value.copy(value);
+    }
+
+    /**
+     * Gets the strength of shadows, 0 is no shadow and 1 is black.
+     */
+    get shadowIntensity(): number {
+        return this.uniforms.shadowIntensity.value;
+    }
+    /**
+     * Sets the strength of shadows, 0 is no shadow and 1 is black.
+     */
+    set shadowIntensity(intensity: number) {
+        this.uniforms.shadowIntensity.value = intensity;
+    }
 }
 
 /**

@@ -54,6 +54,7 @@ import {
     isHighPrecisionLineMaterial,
     MapMeshBasicMaterial,
     MapMeshDepthMaterial,
+    MapMeshFlatStandardMaterial,
     MapMeshStandardMaterial,
     setShaderMaterialDefine,
     SolidLineMaterial
@@ -61,7 +62,6 @@ import {
 import { ContextualArabicConverter } from "@here/harp-text-canvas";
 import { assert } from "@here/harp-utils";
 import * as THREE from "three";
-
 import { AnimatedExtrusionTileHandler } from "../AnimatedExtrusionHandler";
 import {
     applyBaseColorToMaterial,
@@ -590,11 +590,16 @@ export class TileGeometryCreator {
                             tile.addOwnedTexture(texture);
                         }
                     };
+                    const directionalLight = mapView.lights?.find(
+                        l => (l as any).isDirectionalLight
+                    );
                     material = createMaterial(
                         {
                             technique,
                             env: mapView.env,
-                            fog: mapView.scene.fog !== null
+                            fog: mapView.scene.fog !== null,
+                            shadowsEnabled: mapView.shadowsEnabled,
+                            shadowIntensity: directionalLight?.userData.shadowIntensity
                         },
                         onMaterialUpdated
                     );
@@ -809,11 +814,15 @@ export class TileGeometryCreator {
                 if (isExtrudedPolygonTechnique(technique)) {
                     object.castShadow = mapView.shadowsEnabled;
                     object.receiveShadow = mapView.shadowsEnabled;
-                } else if (isStandardTechnique(technique)) {
+                } else if (isStandardTechnique(technique) || isFillTechnique(technique)) {
                     object.receiveShadow = mapView.shadowsEnabled;
                 }
 
-                if (isExtrudedPolygonTechnique(technique) || isFillTechnique(technique)) {
+                if (
+                    isExtrudedPolygonTechnique(technique) ||
+                    isStandardTechnique(technique) ||
+                    isFillTechnique(technique)
+                ) {
                     // filled polygons are normal meshes, and need transparency only when fading or
                     // dynamic properties is defined.
                     const hasDynamicPrimaryColor =
@@ -1294,16 +1303,40 @@ export class TileGeometryCreator {
      */
     addGroundPlane(tile: Tile, renderOrder: number) {
         const shadowsEnabled = tile.mapView.shadowsEnabled;
+        const directionalLight = tile.mapView.lights?.find(l => (l as any).isDirectionalLight);
         const material = this.createGroundPlaneMaterial(
             new THREE.Color(tile.mapView.clearColor),
-            shadowsEnabled,
-            tile.mapView.projection.type === ProjectionType.Spherical
+            tile.mapView.shadowsEnabled,
+            tile.mapView.projection.type === ProjectionType.Spherical,
+            directionalLight?.userData.shadowIntensity
         );
         const mesh = this.createGroundPlane(tile, material, false, shadowsEnabled);
         mesh.receiveShadow = shadowsEnabled;
         mesh.renderOrder = renderOrder;
         this.registerTileObject(tile, mesh, GeometryKind.Background);
         tile.objects.push(mesh);
+    }
+
+    private createGroundPlaneMaterial(
+        color: THREE.Color,
+        shadowsEnabled: boolean,
+        depthWrite: boolean,
+        shadowIntensity?: number
+    ): THREE.Material {
+        if (shadowsEnabled) {
+            return new MapMeshFlatStandardMaterial({
+                color,
+                visible: true,
+                depthWrite,
+                shadowIntensity
+            });
+        } else {
+            return new MapMeshBasicMaterial({
+                color,
+                visible: true,
+                depthWrite
+            });
+        }
     }
 
     /**
@@ -1373,27 +1406,6 @@ export class TileGeometryCreator {
                 }
             }
         });
-    }
-
-    private createGroundPlaneMaterial(
-        color: THREE.Color,
-        shadowsEnabled: boolean,
-        depthWrite: boolean
-    ): THREE.Material {
-        if (shadowsEnabled) {
-            return new MapMeshStandardMaterial({
-                color,
-                visible: true,
-                depthWrite,
-                roughness: 1.0
-            });
-        } else {
-            return new MapMeshBasicMaterial({
-                color,
-                visible: true,
-                depthWrite
-            });
-        }
     }
 
     private setupTerrainMaterial(
