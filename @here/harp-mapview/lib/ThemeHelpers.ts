@@ -129,9 +129,6 @@ export function createLight(lightDescription: Light): THREE.Light {
             if (lightDescription.castShadow !== undefined) {
                 light.castShadow = lightDescription.castShadow;
             }
-            if (lightDescription.shadowIntensity !== undefined) {
-                light.userData.shadowIntensity = lightDescription.shadowIntensity;
-            }
             if (light.castShadow) {
                 light.shadow.bias = 0.00001;
                 light.shadow.mapSize.width = 1024;

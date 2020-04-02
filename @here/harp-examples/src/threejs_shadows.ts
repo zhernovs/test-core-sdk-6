@@ -204,10 +204,9 @@ const fixLights = (theme: Theme) => {
             direction: {
                 x: 0,
                 y: 0.01,
-                z: 1
+                z: -1
             },
-            castShadow: true,
-            shadowIntensity: 0.45
+            castShadow: true
         }
     ];
 };

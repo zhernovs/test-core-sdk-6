@@ -966,12 +966,6 @@ export interface DirectionalLight extends BaseLight {
     intensity: number;
     direction: Vector3Like;
     castShadow?: boolean;
-
-    /**
-     * Number between 0 and 1 which controls how strong the shadow is on flat surfaces.
-     * 0 means there is no shadow and 1 means the shadow appears as pure black.
-     */
-    shadowIntensity?: number;
 }
 
 /**

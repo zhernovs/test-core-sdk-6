@@ -598,8 +598,7 @@ export class TileGeometryCreator {
                             technique,
                             env: mapView.env,
                             fog: mapView.scene.fog !== null,
-                            shadowsEnabled: mapView.shadowsEnabled,
-                            shadowIntensity: directionalLight?.userData.shadowIntensity
+                            shadowsEnabled: mapView.shadowsEnabled
                         },
                         onMaterialUpdated
                     );
@@ -1307,8 +1306,7 @@ export class TileGeometryCreator {
         const material = this.createGroundPlaneMaterial(
             new THREE.Color(tile.mapView.clearColor),
             tile.mapView.shadowsEnabled,
-            tile.mapView.projection.type === ProjectionType.Spherical,
-            directionalLight?.userData.shadowIntensity
+            tile.mapView.projection.type === ProjectionType.Spherical
         );
         const mesh = this.createGroundPlane(tile, material, false, shadowsEnabled);
         mesh.receiveShadow = shadowsEnabled;
@@ -1320,15 +1318,13 @@ export class TileGeometryCreator {
     private createGroundPlaneMaterial(
         color: THREE.Color,
         shadowsEnabled: boolean,
-        depthWrite: boolean,
-        shadowIntensity?: number
+        depthWrite: boolean
     ): THREE.Material {
         if (shadowsEnabled) {
             return new MapMeshFlatStandardMaterial({
                 color,
                 visible: true,
-                depthWrite,
-                shadowIntensity
+                depthWrite
             });
         } else {
             return new MapMeshBasicMaterial({

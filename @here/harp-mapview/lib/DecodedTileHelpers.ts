@@ -90,15 +90,6 @@ export interface MaterialOptions {
      * Whether shadows are enabled or not, this is required because we change the material used.
      */
     shadowsEnabled?: boolean;
-
-    /**
-     * How strong the shadow should be, 0 means there is no shadow and 1 means it is black, note, if
-     * multiple light sources are to be supported, then this should be an array, however given the
-     * high cost, and that it doesn't make much sense to have multiple light sources to cast
-     * shadows, this is the strength of the first directional light. Only makes sense if
-     * [[shadowsEnabled]] is true.
-     */
-    shadowIntensity?: number;
 }
 
 /**
@@ -128,8 +119,6 @@ export function createMaterial(
         Constructor !== HighPrecisionLineMaterial
     ) {
         settings.fog = options.fog;
-    } else if (Constructor === MapMeshFlatStandardMaterial) {
-        settings.shadowIntensity = options.shadowIntensity;
     }
 
     const material = new Constructor(settings);

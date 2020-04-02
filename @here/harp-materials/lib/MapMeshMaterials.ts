@@ -62,16 +62,6 @@ export interface ExtrusionFeatureParameters {
 }
 
 /**
- * Parameters used when constructing a [[MapMeshFlatStandardMaterial]].
- */
-export interface ShadowParameters {
-    /**
-     * How strong the shadow is, 1 means complete black and 0 means no shadow shown.
-     */
-    shadowIntensity?: number;
-}
-
-/**
  * Used internally.
  *
  * @hidden
@@ -1263,31 +1253,24 @@ export class MapMeshFlatStandardMaterial extends THREE.ShaderMaterial {
      * @param params parameters used to construct the material.
      */
     constructor(
-        params?: THREE.MeshStandardMaterialParameters & FadingFeatureParameters & ShadowParameters
+        params?: THREE.MeshStandardMaterialParameters & FadingFeatureParameters
     ) {
         super(params);
     }
 
     setValues(
-        params?: THREE.MeshStandardMaterialParameters & FadingFeatureParameters & ShadowParameters
+        params?: THREE.MeshStandardMaterialParameters & FadingFeatureParameters
     ) {
         // This doesn't work in the contstructor, because the super(params) call takes the params
         // and sets them on this object (see the call to setValues in the contstructor), this in
         // turn calls the get/set methods which require the uniforms, however with Typescript, it
         // isn't possible to call any method before the call to super(params).
-        this.uniforms = THREE.UniformsUtils.merge([
-            THREE.ShaderLib.standard.uniforms,
-            {
-                shadowIntensity: { value: 1 }
-            }
-        ]);
+        this.uniforms =
+            THREE.ShaderLib.standard.uniforms;
         this.extensions.derivatives = true;
         this.lights = true;
-        this.shadowIntensity = params?.shadowIntensity ?? 0;
         this.vertexShader = THREE.ShaderChunk.meshphysical_vert;
-        // There are three main changes, we add the shadowIntensity uniform, the
-        // RE_Direct_Physical function is changed to keep a consistent ambient color and the
-        // indirect diffuse / specular components are removed.
+        // There are two main changes, the RE_Direct_Physical function is changed to keep the material color consistent regardless of light direction.
         this.fragmentShader = THREE.ShaderChunk.meshphysical_frag.replace(
             "#include <lights_physical_pars_fragment>",
             correctShadowChunk
@@ -1303,19 +1286,6 @@ export class MapMeshFlatStandardMaterial extends THREE.ShaderMaterial {
     }
     set color(value: THREE.Color) {
         this.uniforms.diffuse.value.copy(value);
-    }
-
-    /**
-     * Gets the strength of shadows, 0 is no shadow and 1 is black.
-     */
-    get shadowIntensity(): number {
-        return this.uniforms.shadowIntensity.value;
-    }
-    /**
-     * Sets the strength of shadows, 0 is no shadow and 1 is black.
-     */
-    set shadowIntensity(intensity: number) {
-        this.uniforms.shadowIntensity.value = intensity;
     }
 }
 
