@@ -12,7 +12,12 @@ import {
     MapEnv,
     PostEffects,
     Sky,
-    Theme
+    Theme,
+    Value,
+    IndexedTechnique,
+    Expr,
+    getPropertyValue,
+    getFeatureId
 } from "@here/harp-datasource-protocol";
 import {
     EarthConstants,
@@ -68,7 +73,7 @@ import { TextElementsRenderer, ViewUpdateCallback } from "./text/TextElementsRen
 import { TextElementsRendererOptions } from "./text/TextElementsRendererOptions";
 import { createLight } from "./ThemeHelpers";
 import { ThemeLoader } from "./ThemeLoader";
-import { Tile } from "./Tile";
+import { Tile, TileObject, TileFeatureData } from "./Tile";
 import { MapViewUtils } from "./Utils";
 import { ResourceComputationType, VisibleTileSet, VisibleTileSetOptions } from "./VisibleTileSet";
 import { ViewIntersection } from "./ViewIntersection";
@@ -702,8 +707,7 @@ export class MapView extends THREE.EventDispatcher {
     private readonly m_rteCamera:
         | THREE.PerspectiveCamera
         | THREE.OrthographicCamera = new THREE.OrthographicCamera(-129, 128, -128, 128);
-    // | THREE.OrthographicCamera = new THREE.OrthographicCamera(-1, 1, -1, 1);
-
+        //  new THREE.PerspectiveCamera();
     private m_focalLength: number;
     private m_targetDistance: number;
     private m_targetGeoPos = MapViewDefaults.target.clone();
@@ -951,6 +955,7 @@ export class MapView extends THREE.EventDispatcher {
         //     DEFAULT_CAM_NEAR_PLANE,
         //     DEFAULT_CAM_FAR_PLANE
         // );
+
         this.m_camera = new THREE.OrthographicCamera(
             -128,
             128,
@@ -2638,10 +2643,13 @@ export class MapView extends THREE.EventDispatcher {
         this.camera.far = this.m_viewRanges.far;
 
         // FIXME
-        this.orthographicCamera!.left = width / -2;
-        this.orthographicCamera!.right = width / 2;
-        this.orthographicCamera!.bottom = height / -2;
-        this.orthographicCamera!.top = height / 2;
+        if (this.orthographicCamera !== undefined) {
+            const tileSize = EarthConstants.EQUATORIAL_CIRCUMFERENCE / Math.pow(2, this.zoomLevel);
+            this.orthographicCamera!.left = tileSize / -2;
+            this.orthographicCamera!.right = tileSize / 2;
+            this.orthographicCamera!.bottom = tileSize / -2;
+            this.orthographicCamera!.top = tileSize / 2;
+        }
 
         this.m_camera.updateMatrixWorld(false);
 
