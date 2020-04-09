@@ -237,7 +237,7 @@ export class MapRenderingManager implements IMapRenderingManager {
         camera: THREE.PerspectiveCamera | THREE.OrthographicCamera,
         isStaticFrame: boolean
     ) {
-        const target = null;
+        const target: null | THREE.WebGLRenderTarget = null;
         if (!isStaticFrame && this.m_lowResPass.pixelRatio !== undefined) {
             // Not designed to be combined with our own MSAA
             this.m_lowResPass.renderToScreen = true;

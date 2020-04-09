@@ -1238,7 +1238,7 @@ export class VisibleTileSet {
                 const visibleTileKeys: TileKeyEntry[] = [];
                 const dataZoomLevel = dataSource.getDataZoomLevel(zoomLevel);
                 for (const tileKeyEntry of result.tileKeyEntries.get(dataZoomLevel)!.values()) {
-                    if (dataSource.canGetTile(dataZoomLevel, tileKeyEntry.tileKey)) {
+                    if (dataZoomLevel <= tileKeyEntry.tileKey.level) {
                         visibleTileKeys.push(tileKeyEntry);
                     }
                 }

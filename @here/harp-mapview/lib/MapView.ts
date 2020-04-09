@@ -27,7 +27,8 @@ import {
     Projection,
     ProjectionType,
     TilingScheme,
-    GeoBox
+    GeoBox,
+    MathUtils
 } from "@here/harp-geoutils";
 import {
     assert,
@@ -664,7 +665,7 @@ export class MapView extends THREE.EventDispatcher {
      * property to allow access and modification of some parameters of the rendering process at
      * runtime.
      */
-    readonly mapRenderingManager: IMapRenderingManager;
+    public mapRenderingManager: IMapRenderingManager;
 
     private m_renderLabels: boolean = true;
 
@@ -2067,8 +2068,24 @@ export class MapView extends THREE.EventDispatcher {
 
         this.geoBox = geoBox;
         this.geoCenter = geoBox.center;
-        MapViewUtils.zoomOnTargetPosition(this, 0, 0, zoomLevel);
+
+        const topRight = geoBox.northEast;
+        const bottomLeft = geoBox.southWest;
+
+        const topRightWorld = mercatorProjection.projectPoint(topRight);
+        const bottomLeftWorld = mercatorProjection.projectPoint(bottomLeft);
+
+        const centerWorld = new THREE.Vector3(
+            // bottomLeftWorld.x + (bottomLeftWorld.x + topRightWorld.x ) / 2.,
+            Math.min(bottomLeftWorld.x, topRightWorld.x) + 
+                (Math.max(bottomLeftWorld.x, topRightWorld.x) - Math.min(bottomLeftWorld.x, topRightWorld.x) ) / 2.,
+            Math.min(bottomLeftWorld.y, topRightWorld.y) + 
+                (Math.max(bottomLeftWorld.y, topRightWorld.y) - Math.min(bottomLeftWorld.y, topRightWorld.y) ) / 2.,0);
+
+        this.geoCenter = mercatorProjection.unprojectPoint(centerWorld);
+
         MapViewUtils.setRotation(this, 0, 0);
+        MapViewUtils.zoomOnTargetPosition(this, 0, 0, zoomLevel);
         this.update();
     }
 
@@ -2642,7 +2659,6 @@ export class MapView extends THREE.EventDispatcher {
         this.camera.near = this.m_viewRanges.near;
         this.camera.far = this.m_viewRanges.far;
 
-        // FIXME
         if (this.orthographicCamera !== undefined) {
             const tileSize = EarthConstants.EQUATORIAL_CIRCUMFERENCE / Math.pow(2, this.zoomLevel);
             this.orthographicCamera!.left = tileSize / -2;

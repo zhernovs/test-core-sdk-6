@@ -11,7 +11,7 @@ import * as THREE from "three";
  * Values for boolean shader defines
  */
 export const DEFINE_BOOL_TRUE = "";
-export const DEFINE_BOOL_FALSE = undefined;
+export const DEFINE_BOOL_FALSE : any = undefined;
 
 /**
  * Insert shader includes after another shader include.

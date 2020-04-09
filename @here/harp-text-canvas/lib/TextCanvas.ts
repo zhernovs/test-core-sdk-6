@@ -619,7 +619,7 @@ export class TextCanvas {
         let path;
         let pathOverflow;
         let textBounds;
-        let characterBounds;
+        let characterBounds : THREE.Box2[] | undefined;
         let renderStyle;
         let layoutStyle;
         if (params !== undefined) {
