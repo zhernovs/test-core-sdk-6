@@ -2085,7 +2085,7 @@ export class MapView extends THREE.EventDispatcher {
         this.geoCenter = mercatorProjection.unprojectPoint(centerWorld);
 
         MapViewUtils.setRotation(this, 0, 0);
-        MapViewUtils.zoomOnTargetPosition(this, 0, 0, zoomLevel);
+        this.zoomLevel = zoomLevel;
         this.update();
     }
 
