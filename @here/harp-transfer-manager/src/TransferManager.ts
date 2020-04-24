@@ -14,6 +14,37 @@ import "@here/harp-fetch";
 import { DeferredPromise } from "./DeferredPromise";
 
 /**
+ * Abstract interface for a transfer manager.
+ *
+ * Provides functionality for downloading JSON or ArrayBuffers.
+ * Implementations typically implement retry on server congestion,
+ * limit the maximum amount of parallel downloads or merge duplicate
+ * downloads.
+ */
+export interface ITransferManager {
+    /**
+     * Downloads a JSON object.
+     * @param url The URL to download
+     * @param init Optional extra parameters for the download.
+     */
+    downloadJson<T>(url: RequestInfo, init?: RequestInit): Promise<T>;
+
+    /**
+     * Downloads a binary object.
+     * @param url The URL to download
+     * @param init Optional extra parameters for the download
+     */
+    downloadArrayBuffer(url: RequestInfo, init?: RequestInit): Promise<ArrayBuffer>;
+
+    /**
+     * Downloads a URL and returns the response.
+     * @param url The URL to download.
+     * @param init Optional extra parameters for the download.
+     */
+    download(url: RequestInfo, init?: RequestInit): Promise<Response>;
+}
+
+/**
  * `TransferManager` for downloading URLs.
  *
  * Features:
@@ -26,7 +57,7 @@ import { DeferredPromise } from "./DeferredPromise";
  *
  * The static method [[instance]] can be used to get a default constructed instance.
  */
-export class TransferManager {
+export class TransferManager implements ITransferManager {
     /**
      * The timeout in milliseconds to wait between retries. This timeout is multiplied with the
      * number of retries. First retry waits for 0 ms, second retry for 500 ms, third for 1000 ms and
