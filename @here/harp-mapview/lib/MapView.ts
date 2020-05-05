@@ -625,6 +625,8 @@ export interface MapViewOptions extends TextElementsRendererOptions {
      * @default undefined
      */
     enableMixedLod?: boolean;
+
+    paddedTile?: boolean;
 }
 
 /**
@@ -708,7 +710,7 @@ export class MapView extends THREE.EventDispatcher {
     private readonly m_rteCamera:
         | THREE.PerspectiveCamera
         | THREE.OrthographicCamera = new THREE.OrthographicCamera(-129, 128, -128, 128);
-        //  new THREE.PerspectiveCamera();
+    //  new THREE.PerspectiveCamera();
     private m_focalLength: number;
     private m_targetDistance: number;
     private m_targetGeoPos = MapViewDefaults.target.clone();
@@ -2076,17 +2078,30 @@ export class MapView extends THREE.EventDispatcher {
         const bottomLeftWorld = mercatorProjection.projectPoint(bottomLeft);
 
         const centerWorld = new THREE.Vector3(
-            // bottomLeftWorld.x + (bottomLeftWorld.x + topRightWorld.x ) / 2.,
-            Math.min(bottomLeftWorld.x, topRightWorld.x) + 
-                (Math.max(bottomLeftWorld.x, topRightWorld.x) - Math.min(bottomLeftWorld.x, topRightWorld.x) ) / 2.,
-            Math.min(bottomLeftWorld.y, topRightWorld.y) + 
-                (Math.max(bottomLeftWorld.y, topRightWorld.y) - Math.min(bottomLeftWorld.y, topRightWorld.y) ) / 2.,0);
+            Math.min(bottomLeftWorld.x, topRightWorld.x) +
+                (Math.max(bottomLeftWorld.x, topRightWorld.x) -
+                    Math.min(bottomLeftWorld.x, topRightWorld.x)) /
+                    2,
+            Math.min(bottomLeftWorld.y, topRightWorld.y) +
+                (Math.max(bottomLeftWorld.y, topRightWorld.y) -
+                    Math.min(bottomLeftWorld.y, topRightWorld.y)) /
+                    2,
+            0
+        );
 
         this.geoCenter = mercatorProjection.unprojectPoint(centerWorld);
 
         MapViewUtils.setRotation(this, 0, 0);
         this.zoomLevel = zoomLevel;
         this.update();
+    }
+
+    set tilePadding(padding: boolean) {
+        this.m_options.paddedTile = padding;
+    }
+
+    get tilePadding(): boolean {
+        return this.m_options.paddedTile === true;
     }
 
     /**
@@ -2629,7 +2644,7 @@ export class MapView extends THREE.EventDispatcher {
      */
     private updateCameras(viewRanges?: ViewRanges) {
         const { width, height } = this.m_renderer.getSize(cache.vector2[0]);
-            this.setFovOnCamera(this.m_options.fovCalculation!, height);
+        this.setFovOnCamera(this.m_options.fovCalculation!, height);
 
         // When calculating clip planes account for the highest building on the earth,
         // multiplying its height by projection scaling factor. This approach assumes
@@ -2660,11 +2675,14 @@ export class MapView extends THREE.EventDispatcher {
         this.camera.far = this.m_viewRanges.far;
 
         if (this.orthographicCamera !== undefined) {
+            const padding = this.tilePadding;
             const tileSize = EarthConstants.EQUATORIAL_CIRCUMFERENCE / Math.pow(2, this.zoomLevel);
-            this.orthographicCamera!.left = tileSize / -2;
-            this.orthographicCamera!.right = tileSize / 2;
-            this.orthographicCamera!.bottom = tileSize / -2;
-            this.orthographicCamera!.top = tileSize / 2;
+            const tilePadding = padding ? tileSize * 0.5 : 0;
+
+            this.orthographicCamera!.left = tileSize / -2 - tilePadding;
+            this.orthographicCamera!.right = tileSize / 2 + tilePadding;
+            this.orthographicCamera!.bottom = tileSize / -2 - tilePadding;
+            this.orthographicCamera!.top = tileSize / 2 + tilePadding;
         }
 
         this.m_camera.updateMatrixWorld(false);
@@ -2701,7 +2719,12 @@ export class MapView extends THREE.EventDispatcher {
         if (target !== null) {
             this.m_targetWorldPos.copy(target);
             this.m_targetGeoPos = this.projection.unprojectPoint(target);
-            this.m_targetDistance = this.camera.position.distanceTo(target);
+
+            if (this.orthographicCamera === undefined) {
+                this.m_targetDistance = this.camera.position.distanceTo(target);
+            } else {
+                this.m_targetDistance = zoomLevelDistance;
+            }
         }
     }
 

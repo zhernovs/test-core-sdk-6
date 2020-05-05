@@ -375,8 +375,10 @@ export class TextElement {
             this.layoutStyle = layoutParams;
         }
 
+        // this.type =
+        //     points instanceof THREE.Vector3 ? TextElementType.PoiLabel : TextElementType.PathLabel;
         this.type =
-            points instanceof THREE.Vector3 ? TextElementType.PoiLabel : TextElementType.PathLabel;
+            Array.isArray(points) ? TextElementType.PathLabel : TextElementType.PoiLabel;
     }
 
     /**

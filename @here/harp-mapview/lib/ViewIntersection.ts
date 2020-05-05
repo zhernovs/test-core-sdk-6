@@ -24,6 +24,7 @@ import { TileOffsetUtils } from "./Utils";
 
 const tmpVectors3 = [new THREE.Vector3(), new THREE.Vector3()];
 const tmpVector4 = new THREE.Vector4();
+const MaxError = 1E-7;
 
 function getGeoBox(tilingScheme: TilingScheme, childTileKey: TileKey, offset: number): GeoBox {
     const geoBox = tilingScheme.getGeoBox(childTileKey);
@@ -34,15 +35,12 @@ function getGeoBox(tilingScheme: TilingScheme, childTileKey: TileKey, offset: nu
 }
 
 function geoBoxesIntersect(geoBoxA: GeoBox, geoBoxB: GeoBox): boolean {
-    // Calculate intersection.
-    const intersection = {
-        west: Math.max(geoBoxA.west, geoBoxB.west),
-        south: Math.max(geoBoxA.south, geoBoxB.south),
-        north: Math.min(geoBoxA.north, geoBoxB.north),
-        east: Math.min(geoBoxA.east, geoBoxB.east)
-    };
-
-    return intersection.east > intersection.west && intersection.north > intersection.south;
+    return (
+        geoBoxA.west < geoBoxB.east - MaxError &&
+        geoBoxA.east >= geoBoxB.west + MaxError &&
+        geoBoxA.south <= geoBoxB.north - MaxError &&
+        geoBoxA.north >= geoBoxB.south + MaxError
+    );
 }
 
 /**

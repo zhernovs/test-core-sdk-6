@@ -17,7 +17,13 @@ import {
 import * as THREE from "three";
 
 const debugMaterial = new THREE.LineBasicMaterial({
-    color: 0xff0000,
+    color: 0x000080,
+    linewidth: 1,
+    depthTest: false
+});
+
+const debugMaterialBorder = new THREE.LineBasicMaterial({
+    color: 0xff4040,
     linewidth: 1,
     depthTest: false
 });
@@ -30,6 +36,7 @@ const TEXT_SCALE = 0.8;
 
 export class DebugTile extends Tile {
     private readonly geometry = new THREE.Geometry();
+    private readonly geometryBorder = new THREE.Geometry();
     private readonly m_labelPositions = new THREE.BufferAttribute(new Float32Array(3), 3);
 
     private m_textRenderStyle = new TextRenderStyle({
@@ -71,6 +78,42 @@ export class DebugTile extends Tile {
         const lineObject = new THREE.Line(this.geometry, debugMaterial);
         lineObject.renderOrder = PRIORITY_ALWAYS;
         this.objects.push(lineObject);
+
+        const tileWidth =
+            Math.max(worldBox.max.x, worldBox.min.x) - Math.min(worldBox.max.x, worldBox.min.x);
+        const tileHeight =
+            Math.max(worldBox.max.y, worldBox.min.y) - Math.min(worldBox.max.y, worldBox.min.y);
+        const borderX = tileWidth * 0.1;
+        const borderY = tileHeight * 0.1;
+
+        const geoCoordinatesBorder: GeoCoordinates[] = [
+            projection.unprojectPoint(
+                new THREE.Vector3(worldBox.min.x - borderX, worldBox.min.y - borderY, 0)
+            ),
+            projection.unprojectPoint(
+                new THREE.Vector3(worldBox.max.x + borderX, worldBox.min.y - borderY, 0)
+            ),
+            projection.unprojectPoint(
+                new THREE.Vector3(worldBox.max.x + borderX, worldBox.max.y + borderY, 0)
+            ),
+            projection.unprojectPoint(
+                new THREE.Vector3(worldBox.min.x - borderX, worldBox.max.y + borderY, 0)
+            ),
+            projection.unprojectPoint(
+                new THREE.Vector3(worldBox.min.x - borderX, worldBox.min.y - borderY, 0)
+            )
+        ];
+
+        geoCoordinatesBorder.forEach(geoPoint => {
+            const pt = new THREE.Vector3();
+            this.projection.projectPoint(geoPoint, pt);
+            pt.sub(this.center);
+            this.geometryBorder.vertices.push(pt);
+        });
+
+        const lineObjectBorder = new THREE.Line(this.geometryBorder, debugMaterialBorder);
+        lineObjectBorder.renderOrder = PRIORITY_ALWAYS;
+        this.objects.push(lineObjectBorder);
 
         this.m_labelPositions.setXYZ(0, 0, 0, 0);
 

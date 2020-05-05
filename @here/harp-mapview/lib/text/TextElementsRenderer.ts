@@ -133,6 +133,9 @@ const tmpTextBufferCreationParams: TextBufferCreationParameters = {};
 const tmpAdditionParams: AdditionParameters = {};
 const tmpBufferAdditionParams: TextBufferAdditionParameters = {};
 
+// For orthographic camera:
+const FixedTextDistanceScale = 1.0;
+
 class TileTextElements {
     constructor(readonly tile: Tile, readonly group: TextElementGroup) {}
 }
@@ -1536,7 +1539,8 @@ export class TextElementsRenderer {
         tempScreenPosition.y = tempPoiScreenPosition.y = screenPosition.y;
 
         // Scale the text depending on the label's distance to the camera.
-        const textDistance = this.m_viewState.worldCenter.distanceTo(position);
+        // const textDistance = this.m_viewState.worldCenter.distanceTo(position);
+        const textDistance = this.m_viewState.lookAtDistance * FixedTextDistanceScale;
         if (
             pointLabel.fadeFar !== undefined &&
             (pointLabel.fadeFar <= 0.0 ||
@@ -1874,7 +1878,9 @@ export class TextElementsRenderer {
         }
 
         // Update the real rendering distance to have smooth fading and scaling
-        labelState.setViewDistance(computeViewDistance(this.m_viewState.worldCenter, pathLabel));
+        // labelState.setViewDistance(computeViewDistance(this.m_viewState.worldCenter, pathLabel));
+        const textDistance = this.m_viewState.lookAtDistance * FixedTextDistanceScale;
+        labelState.setViewDistance(textDistance);
         const textRenderDistance = -labelState.renderDistance;
 
         // Scale the text depending on the label's distance to the camera.
