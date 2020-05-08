@@ -301,29 +301,19 @@ describe("TransverseMercator", function() {
     it("projectBox", function() {
         const tileKey = TileKey.fromRowColumnLevel(0, 0, 0);
         const box = polarTilingScheme.getGeoBox(tileKey);
+        // tslint:disable-next-line: no-console
+        console.log("#box", JSON.stringify(box));
         const projectedBox = transverseMercatorProjection.projectBox(box);
+        // tslint:disable-next-line: no-console
+        console.log("#projectedBox", JSON.stringify(projectedBox));
         const unprojectedBox = transverseMercatorProjection.unprojectBox(projectedBox);
+        // tslint:disable-next-line: no-console
+        console.log("#unprojectedBox", JSON.stringify(unprojectedBox));
 
-        assert.approximately(
-            box.southWest.latitudeInRadians,
-            unprojectedBox.southWest.latitudeInRadians,
-            0.0001
-        );
-        assert.approximately(
-            box.southWest.longitudeInRadians,
-            unprojectedBox.southWest.longitudeInRadians,
-            0.0001
-        );
-        assert.approximately(
-            box.northEast.latitudeInRadians,
-            unprojectedBox.northEast.latitudeInRadians,
-            0.0001
-        );
-        assert.approximately(
-            box.northEast.longitudeInRadians,
-            unprojectedBox.northEast.longitudeInRadians,
-            0.0001
-        );
+        assert.approximately(box.southWest.latitude, unprojectedBox.southWest.latitude, 0.0001);
+        assert.approximately(box.southWest.longitude, unprojectedBox.southWest.longitude, 0.0001);
+        assert.approximately(box.northEast.latitude, unprojectedBox.northEast.latitude, 0.0001);
+        assert.approximately(box.northEast.longitude, unprojectedBox.northEast.longitude, 0.0001);
     });
 });
 

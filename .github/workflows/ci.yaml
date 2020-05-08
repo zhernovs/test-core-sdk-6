@@ -85,6 +85,11 @@ jobs:
         yarn test-browser --headless-firefox
       shell: bash
       if: matrix.os == 'ubuntu-latest'
+    - name: Tests on Safari (macOS)
+      run: |
+        sudo safaridriver --enable
+        yarn test-browser --safari
+      if: always() && matrix.os == 'macOS-latest'
     - name: Build examples
       run: yarn run build-examples
       shell: bash
