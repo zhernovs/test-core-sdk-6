@@ -329,6 +329,8 @@ export class TextElement {
 
     type: TextElementType;
 
+    distanceFromTileCenter?: number = 0;
+
     private m_poiInfo?: PoiInfo;
 
     private m_renderStyle?: TextRenderStyle;

@@ -9,14 +9,14 @@ const DEFAULT_FONT_CATALOG = "./resources/fonts/Default_FontCatalog.json";
 /**
  * Default number of labels/POIs rendered in the scene
  */
-const DEFAULT_MAX_NUM_RENDERED_TEXT_ELEMENTS = 500;
+const DEFAULT_MAX_NUM_RENDERED_TEXT_ELEMENTS = 50000;
 
 /**
  * Number of elements that are put into second queue. This second chance queue is used to render
  * TextElements that have not been on screen before. This is a quick source for elements that can
  * appear when the camera moves a bit, before new elements are placed.
  */
-const DEFAULT_MAX_NUM_SECOND_CHANCE_ELEMENTS = 300;
+const DEFAULT_MAX_NUM_SECOND_CHANCE_ELEMENTS = 30000;
 
 /**
  * Maximum distance for text labels expressed as a ratio of distance to from the camera (0) to the
@@ -36,7 +36,7 @@ const DEFAULT_LABEL_DISTANCE_SCALE_MAX = 1.5;
 
 const MIN_GLYPH_COUNT = 1024;
 
-const MAX_GLYPH_COUNT = 32768;
+const MAX_GLYPH_COUNT = 327680;
 
 export interface TextElementsRendererOptions {
     /**

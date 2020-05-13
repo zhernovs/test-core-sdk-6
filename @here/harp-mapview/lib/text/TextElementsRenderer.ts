@@ -308,6 +308,8 @@ export class TextElementsRenderer {
     private m_glyphLoadingCount: number = 0;
     private m_loadPromise: Promise<any> | undefined;
     private readonly m_options: TextElementsRendererOptions;
+    private readonly m_viewUpdateCallbacks: ViewUpdateCallback[] = [];
+    private m_numLoadPromisesActive: number = 0;
 
     private readonly m_textStyleCache: TextStyleCache;
     private m_textRenderers: TextCanvasRenderer[] = [];
@@ -332,7 +334,7 @@ export class TextElementsRenderer {
      *
      * @param m_viewState State of the view for which this renderer will draw text.
      * @param m_viewCamera Camera used by the view for which this renderer will draw text.
-     * @param m_viewUpdateCallback To be called whenever the view needs to be updated.
+     * @param viewUpdateCallback To be called whenever the view needs to be updated.
      * @param m_screenCollisions General 2D screen occlusion management, may be shared between
      *     instances.
      * @param m_screenProjector Projects 3D coordinates into screen space.
@@ -347,7 +349,7 @@ export class TextElementsRenderer {
     constructor(
         private m_viewState: ViewState,
         private m_viewCamera: THREE.Camera,
-        private m_viewUpdateCallback: ViewUpdateCallback,
+        viewUpdateCallback: ViewUpdateCallback,
         private m_screenCollisions: ScreenCollisions,
         private m_screenProjector: ScreenProjector,
         private m_textCanvasFactory: TextCanvasFactory,
@@ -357,6 +359,9 @@ export class TextElementsRenderer {
         private m_theme: Theme,
         options: TextElementsRendererOptions
     ) {
+        if (viewUpdateCallback !== undefined) {
+            this.m_viewUpdateCallbacks.push(viewUpdateCallback);
+        }
         this.m_textStyleCache = new TextStyleCache(this.m_theme);
 
         this.m_options = { ...options };
@@ -382,6 +387,23 @@ export class TextElementsRenderer {
 
     get styleCache() {
         return this.m_textStyleCache;
+    }
+
+    addViewUpdateCallback(viewUpdateCallback: ViewUpdateCallback) {
+        if (viewUpdateCallback !== undefined) {
+            this.m_viewUpdateCallbacks.push(viewUpdateCallback);
+        }
+    }
+
+    callViewUpdateCallbacks() {
+        for (const cb of this.m_viewUpdateCallbacks) {
+            cb();
+        }
+        this.m_numLoadPromisesActive--;
+    }
+
+    get waitingForLoad(): boolean {
+        return this.m_numLoadPromisesActive > 0;
     }
 
     /**
@@ -436,7 +458,7 @@ export class TextElementsRenderer {
      * @param time Current frame time.
      * @param elevationProvider
      */
-    placeText(dataSourceTileList: DataSourceTileList[], time: number) {
+    placeText(dataSourceTileList: DataSourceTileList[], time: number, worldTarget: THREE.Vector3) {
         const tileTextElementsChanged = checkIfTextElementsChanged(dataSourceTileList);
 
         const textElementsAvailable = this.hasOverlayText() || tileTextElementsChanged;
@@ -475,7 +497,7 @@ export class TextElementsRenderer {
         // this happens is zooming in/out: text groups from the old level may still be fading out
         // after all groups in the new level were updated.
         const placeNewTextElements = updateTextElements || anyTextGroupEvicted;
-        this.placeTextElements(time, placeNewTextElements);
+        this.placeTextElements(time, placeNewTextElements, worldTarget);
         this.placeOverlayTextElements();
         this.updateTextRenderers();
     }
@@ -660,7 +682,7 @@ export class TextElementsRenderer {
                 this.m_initialized = true;
                 this.m_initPromise = undefined;
                 this.invalidateCache(); // Force cache update after initialization.
-                this.m_viewUpdateCallback();
+                this.callViewUpdateCallbacks();
             });
         }
         return this.initialized;
@@ -737,7 +759,8 @@ export class TextElementsRenderer {
         groupState: TextElementGroupState,
         renderParams: RenderParams,
         maxNumPlacedLabels: number,
-        pass: Pass
+        pass: Pass,
+        worldTarget?: THREE.Vector3
     ): boolean {
         // Unvisited text elements are never placed.
         assert(groupState.visited);
@@ -813,7 +836,7 @@ export class TextElementsRenderer {
 
             if (elevationProvider !== undefined && !textElement.elevated) {
                 if (!elevationMap) {
-                    this.m_viewUpdateCallback(); // Update view until elevation is loaded.
+                    this.callViewUpdateCallbacks(); // Update view until elevation is loaded.
                     this.m_forceNewLabelsPass = true;
                     continue;
                 }
@@ -921,7 +944,7 @@ export class TextElementsRenderer {
                         // be rendered if there's no text element updates in the next frames.
                         this.m_forceNewLabelsPass =
                             this.m_forceNewLabelsPass || forceNewPassOnLoaded;
-                        this.m_viewUpdateCallback();
+                        this.callViewUpdateCallbacks();
                     });
                 if (this.m_glyphLoadingCount === 0) {
                     this.m_loadPromise = undefined;
@@ -932,6 +955,8 @@ export class TextElementsRenderer {
                     this.m_loadPromise === undefined
                         ? newLoadPromise
                         : Promise.all([this.m_loadPromise, newLoadPromise]);
+
+                this.m_numLoadPromisesActive++;
             }
         }
         if (textElement.loadingState === LoadingState.Loaded) {
@@ -1281,7 +1306,11 @@ export class TextElementsRenderer {
         }
     }
 
-    private placeTextElements(time: number, placeNewTextElements: boolean) {
+    private placeTextElements(
+        time: number,
+        placeNewTextElements: boolean,
+        worldTarget: THREE.Vector3
+    ) {
         const renderParams: RenderParams = {
             numRenderedTextElements: 0,
             fadeAnimationRunning: false,
@@ -1337,7 +1366,8 @@ export class TextElementsRenderer {
                     textElementGroupState,
                     renderParams,
                     maxNumPlacedTextElements,
-                    Pass.PersistentLabels
+                    Pass.PersistentLabels,
+                    worldTarget
                 )
             ) {
                 break;
@@ -1359,7 +1389,7 @@ export class TextElementsRenderer {
         }
 
         if (!this.m_options.disableFading && renderParams.fadeAnimationRunning) {
-            this.m_viewUpdateCallback();
+            this.callViewUpdateCallbacks();
         }
     }
 
@@ -1607,6 +1637,8 @@ export class TextElementsRenderer {
         );
         const renderText = shouldRenderPointText(labelState, this.m_viewState, this.m_options);
 
+        const disableFading = true;
+
         // Render the label's text...
         // textRenderState is always defined at this point.
         if (renderText) {
@@ -1635,7 +1667,11 @@ export class TextElementsRenderer {
             }
 
             if (textRejected) {
+                if (!disableFading) {
                 textRenderState!.startFadeOut(renderParams.time);
+                } else {
+                    textRenderState!.markFadedOut();
+            }
             }
 
             const textNeedsDraw =
@@ -1644,7 +1680,11 @@ export class TextElementsRenderer {
 
             if (textNeedsDraw) {
                 if (!textRejected) {
+                    if (!disableFading) {
                     textRenderState!.startFadeIn(renderParams.time);
+                    } else {
+                        textRenderState!.markFadedIn();
+                }
                 }
                 renderParams.fadeAnimationRunning =
                     renderParams.fadeAnimationRunning || textRenderState!.isFading();
@@ -1665,9 +1705,17 @@ export class TextElementsRenderer {
         // ... and render the icon (if any).
         if (iconReady) {
             if (iconRejected) {
+                if (!disableFading) {
                 iconRenderState!.startFadeOut(renderParams.time);
             } else {
+                    iconRenderState!.markFadedOut();
+                }
+            } else {
+                if (!disableFading) {
                 iconRenderState!.startFadeIn(renderParams.time);
+                } else {
+                    iconRenderState!.markFadedIn();
+                }
             }
 
             renderParams.fadeAnimationRunning =
@@ -1909,7 +1957,12 @@ export class TextElementsRenderer {
             return false;
         }
 
+        const disableFading = true;
+        if (!disableFading) {
         labelState.textRenderState!.startFadeIn(renderParams.time);
+        } else {
+            labelState.textRenderState!.markFadedIn();
+        }
 
         let opacity = pathLabel.renderStyle!.opacity;
 

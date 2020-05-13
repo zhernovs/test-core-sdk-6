@@ -197,4 +197,16 @@ export class RenderState {
             assert(this.isFading());
         }
     }
+
+    markFadedIn() {
+        this.value = 1.0;
+        this.opacity = 1.0;
+        this.m_state = FadingState.FadedIn;
+    }
+
+    markFadedOut() {
+        this.value = 1.0;
+        this.opacity = 0.0;
+        this.m_state = FadingState.FadedOut;
+    }
 }

@@ -3275,7 +3275,11 @@ export class MapView extends THREE.EventDispatcher {
             return;
         }
 
-        this.m_textElementsRenderer.placeText(this.m_visibleTiles.dataSourceTileList, time);
+        this.m_textElementsRenderer.placeText(
+            this.m_visibleTiles.dataSourceTileList,
+            time,
+            this.worldTarget
+        );
     }
 
     private finishRenderTextElements() {
