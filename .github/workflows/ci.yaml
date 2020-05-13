@@ -11,6 +11,8 @@ on:
 env:
   nodeTestTimeout: 4000
   browserTestTimeout: 8000
+  # GitHub actions already have chrome installed, so no need to download it by yarn.
+  PUPPETEER_SKIP_CHROMIUM_DOWNLOAD:true
 
 jobs:
   test:
