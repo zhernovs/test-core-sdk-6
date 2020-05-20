@@ -458,7 +458,7 @@ export class TextElementsRenderer {
      * @param time Current frame time.
      * @param elevationProvider
      */
-    placeText(dataSourceTileList: DataSourceTileList[], time: number, worldTarget: THREE.Vector3) {
+    placeText(dataSourceTileList: DataSourceTileList[], time: number) {
         const tileTextElementsChanged = checkIfTextElementsChanged(dataSourceTileList);
 
         const textElementsAvailable = this.hasOverlayText() || tileTextElementsChanged;
@@ -497,7 +497,7 @@ export class TextElementsRenderer {
         // this happens is zooming in/out: text groups from the old level may still be fading out
         // after all groups in the new level were updated.
         const placeNewTextElements = updateTextElements || anyTextGroupEvicted;
-        this.placeTextElements(time, placeNewTextElements, worldTarget);
+        this.placeTextElements(time, placeNewTextElements);
         this.placeOverlayTextElements();
         this.updateTextRenderers();
     }
@@ -759,8 +759,7 @@ export class TextElementsRenderer {
         groupState: TextElementGroupState,
         renderParams: RenderParams,
         maxNumPlacedLabels: number,
-        pass: Pass,
-        worldTarget?: THREE.Vector3
+        pass: Pass
     ): boolean {
         // Unvisited text elements are never placed.
         assert(groupState.visited);
@@ -1308,8 +1307,7 @@ export class TextElementsRenderer {
 
     private placeTextElements(
         time: number,
-        placeNewTextElements: boolean,
-        worldTarget: THREE.Vector3
+        placeNewTextElements: boolean
     ) {
         const renderParams: RenderParams = {
             numRenderedTextElements: 0,
@@ -1366,8 +1364,7 @@ export class TextElementsRenderer {
                     textElementGroupState,
                     renderParams,
                     maxNumPlacedTextElements,
-                    Pass.PersistentLabels,
-                    worldTarget
+                    Pass.PersistentLabels
                 )
             ) {
                 break;
@@ -1668,10 +1665,10 @@ export class TextElementsRenderer {
 
             if (textRejected) {
                 if (!disableFading) {
-                textRenderState!.startFadeOut(renderParams.time);
+                    textRenderState!.startFadeOut(renderParams.time);
                 } else {
                     textRenderState!.markFadedOut();
-            }
+                }
             }
 
             const textNeedsDraw =
@@ -1681,10 +1678,10 @@ export class TextElementsRenderer {
             if (textNeedsDraw) {
                 if (!textRejected) {
                     if (!disableFading) {
-                    textRenderState!.startFadeIn(renderParams.time);
+                        textRenderState!.startFadeIn(renderParams.time);
                     } else {
                         textRenderState!.markFadedIn();
-                }
+                    }
                 }
                 renderParams.fadeAnimationRunning =
                     renderParams.fadeAnimationRunning || textRenderState!.isFading();
@@ -1706,13 +1703,13 @@ export class TextElementsRenderer {
         if (iconReady) {
             if (iconRejected) {
                 if (!disableFading) {
-                iconRenderState!.startFadeOut(renderParams.time);
-            } else {
+                    iconRenderState!.startFadeOut(renderParams.time);
+                } else {
                     iconRenderState!.markFadedOut();
                 }
             } else {
                 if (!disableFading) {
-                iconRenderState!.startFadeIn(renderParams.time);
+                    iconRenderState!.startFadeIn(renderParams.time);
                 } else {
                     iconRenderState!.markFadedIn();
                 }
@@ -1959,7 +1956,7 @@ export class TextElementsRenderer {
 
         const disableFading = true;
         if (!disableFading) {
-        labelState.textRenderState!.startFadeIn(renderParams.time);
+            labelState.textRenderState!.startFadeIn(renderParams.time);
         } else {
             labelState.textRenderState!.markFadedIn();
         }
