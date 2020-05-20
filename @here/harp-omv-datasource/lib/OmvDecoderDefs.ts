@@ -189,6 +189,13 @@ export interface OmvDecoderOptions {
     featureModifierId?: FeatureModifierId;
 
     enableElevationOverlay?: boolean;
+
+    /**
+     * Whether the internal inner walls of extruded buildings at the tile boundary are removed.
+     * This is important for shadows because otherwise there are artifacts with the back faces of
+     * such walls.
+     */
+    removeInnerWalls?: boolean;
 }
 
 /**
