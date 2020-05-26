@@ -141,6 +141,19 @@ const MAX_CORNER_ANGLE = Math.PI / 8;
  */
 const INVALID_ARRAY_INDEX = -1;
 
+// Number of bits to shift the GeometryType to create the key for the m_meshBuffers below.
+const SHIFT_TYPE = Math.pow(2, 10);
+
+// Combines the given techniqueIndex and the type into a single unique key
+function getMeshBufferKey(techniqueIndex: number, type: GeometryType) {
+    return techniqueIndex + ((type as number) * SHIFT_TYPE);
+}
+
+// Extracts the techniqueIndex from the key generated with `getMeshBufferKey`
+function getTechniqueFromMeshBufferKey(key: number) {
+    return key % SHIFT_TYPE;
+}
+
 function createIndexBufferAttribute(
     elements: ArrayLike<number>,
     maxValue: number,
@@ -1244,28 +1257,8 @@ export class OmvDecodedTileEmitter implements IOmvEmitter {
         context: AttrEvaluationContext,
         extents: number
     ): void {
-        const isExtruded = isExtrudedPolygonTechnique(technique);
-
-        const geometryType = isExtruded ? GeometryType.ExtrudedPolygon : GeometryType.Polygon;
-        const meshBuffers = this.findOrCreateMeshBuffers(techniqueIndex, geometryType);
-
-        if (meshBuffers === undefined) {
-            return;
-        }
-
         const extrudedPolygonTechnique = technique as ExtrudedPolygonTechnique;
-        const fillTechnique = technique as FillTechnique;
-        const boundaryWalls = extrudedPolygonTechnique.boundaryWalls !== false;
-
-        const isFilled = isFillTechnique(technique);
-        const texCoordType = this.getTextureCoordinateType(technique);
-
         let height = evaluateTechniqueAttr<number>(context, extrudedPolygonTechnique.height);
-
-        let floorHeight = evaluateTechniqueAttr<number>(
-            context,
-            extrudedPolygonTechnique.floorHeight
-        );
 
         if (height === undefined) {
             // Get the height values for the footprint and extrusion.
@@ -1282,6 +1275,25 @@ export class OmvDecodedTileEmitter implements IOmvEmitter {
                     ? styleSetDefaultHeight
                     : 0;
         }
+
+        const isExtruded = isExtrudedPolygonTechnique(technique) && height !== 0;
+        const geometryType = isExtruded ? GeometryType.ExtrudedPolygon : GeometryType.Polygon;
+        const meshBuffers = this.findOrCreateMeshBuffers(techniqueIndex, geometryType);
+
+        if (meshBuffers === undefined) {
+            return;
+        }
+
+        const fillTechnique = technique as FillTechnique;
+        const boundaryWalls = extrudedPolygonTechnique.boundaryWalls !== false;
+
+        const isFilled = isFillTechnique(technique);
+        const texCoordType = this.getTextureCoordinateType(technique);
+
+        let floorHeight = evaluateTechniqueAttr<number>(
+            context,
+            extrudedPolygonTechnique.floorHeight
+        );
 
         if (floorHeight === undefined) {
             const featureMinHeight = context.env.lookup("min_height") as number;
@@ -1322,7 +1334,7 @@ export class OmvDecodedTileEmitter implements IOmvEmitter {
         const hasEdges = edgeWidth > 0.0;
 
         let color: THREE.Color | undefined;
-        if (isExtrudedPolygonTechnique(technique)) {
+        if (isExtruded && isExtrudedPolygonTechnique(technique)) {
             if (getOptionValue(technique.vertexColors, false)) {
                 let colorValue = evaluateTechniqueAttr<StyleColor>(context, technique.color);
                 if (colorValue === undefined) {
@@ -1661,19 +1673,20 @@ export class OmvDecodedTileEmitter implements IOmvEmitter {
     }
 
     private createGeometries() {
-        this.m_meshBuffers.forEach((meshBuffers, techniqueIdx) => {
+        this.m_meshBuffers.forEach((meshBuffers, key) => {
             if (meshBuffers.positions.length === 0) {
                 return;
             } // nothing to do
 
+            const techniqueIndex = getTechniqueFromMeshBufferKey(key);
             if (
                 !this.m_styleSetEvaluator.techniques ||
-                this.m_styleSetEvaluator.techniques.length <= techniqueIdx
+                this.m_styleSetEvaluator.techniques.length <= techniqueIndex
             ) {
                 throw new Error("Invalid technique index");
             }
 
-            const technique = this.m_styleSetEvaluator.techniques[techniqueIdx];
+            const technique = this.m_styleSetEvaluator.techniques[techniqueIndex];
             if (technique === undefined) {
                 return;
             }
@@ -1689,7 +1702,7 @@ export class OmvDecodedTileEmitter implements IOmvEmitter {
                         itemCount: 3
                     },
                     texts: meshBuffers.texts,
-                    technique: techniqueIdx,
+                    technique: techniqueIndex,
                     stringCatalog: meshBuffers.stringCatalog,
                     objInfos: meshBuffers.objInfos
                 });
@@ -1705,7 +1718,7 @@ export class OmvDecodedTileEmitter implements IOmvEmitter {
                         itemCount: 3
                     },
                     texts: meshBuffers.texts,
-                    technique: techniqueIdx,
+                    technique: techniqueIndex,
                     stringCatalog: meshBuffers.stringCatalog,
                     imageTextures: meshBuffers.imageTextures,
                     objInfos: meshBuffers.objInfos,
@@ -1720,7 +1733,7 @@ export class OmvDecodedTileEmitter implements IOmvEmitter {
                 meshBuffers.groups.push({
                     start: 0,
                     count: positionElements.length / 3,
-                    technique: techniqueIdx
+                    technique: techniqueIndex
                 });
             }
 
@@ -1878,8 +1891,12 @@ export class OmvDecodedTileEmitter implements IOmvEmitter {
         });
     }
 
-    private findOrCreateMeshBuffers(index: number, type: GeometryType): MeshBuffers | undefined {
-        let buffers = this.m_meshBuffers.get(index);
+    private findOrCreateMeshBuffers(
+        techniqueIndex: number,
+        type: GeometryType
+    ): MeshBuffers | undefined {
+        const key = getMeshBufferKey(techniqueIndex, type);
+        let buffers = this.m_meshBuffers.get(key);
 
         if (buffers !== undefined) {
             if (buffers.type !== type) {
@@ -1890,7 +1907,7 @@ export class OmvDecodedTileEmitter implements IOmvEmitter {
             return buffers;
         }
         buffers = new MeshBuffers(type);
-        this.m_meshBuffers.set(index, buffers);
+        this.m_meshBuffers.set(key, buffers);
         return buffers;
     }
 
