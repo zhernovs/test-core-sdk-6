@@ -1493,7 +1493,7 @@ export class MapView extends THREE.EventDispatcher {
      *
      * @note Country code should be encoded in ISO 3166-1 alpha-2 standard.
      * @param pov The code of the country which point of view should be presented,
-     * `undefined` if default (commonly accepted) political view should be used.
+     * if `undefined` "defacto" or most widely accepted point of view will be presented.
      */
     set politicalView(pov: string | undefined) {
         if (this.m_politicalView === pov) {

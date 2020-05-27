@@ -149,7 +149,7 @@ export class OmvDecoder implements IGeometryProcessor {
         private readonly m_styleSetEvaluator: StyleSetEvaluator,
         private readonly m_showMissingTechniques: boolean,
         private readonly m_dataFilter?: OmvFeatureFilter,
-        private readonly m_featureModifier?: OmvFeatureModifier,
+        private readonly m_featureModifiers?: OmvFeatureModifier[],
         private readonly m_gatherFeatureAttributes = false,
         private readonly m_skipShortLabels = true,
         private readonly m_storageLevelOffset = 0,
@@ -222,11 +222,14 @@ export class OmvDecoder implements IGeometryProcessor {
         env: MapEnv,
         storageLevel: number
     ): void {
-        if (
-            this.m_featureModifier !== undefined &&
-            !this.m_featureModifier.doProcessPointFeature(layer, env, storageLevel)
-        ) {
-            return;
+        if (this.m_featureModifiers !== undefined) {
+            this.m_featureModifiers.forEach(fm => {
+                // TODO: The logic of feature ignore should be actually in the feature filtering
+                // mechanism - see OmvFeatureFilter.
+                if (!fm.doProcessPointFeature(layer, env, storageLevel)) {
+                    return;
+                }
+            });
         }
 
         const techniques = this.applyKindFilter(
@@ -266,11 +269,12 @@ export class OmvDecoder implements IGeometryProcessor {
         env: MapEnv,
         storageLevel: number
     ): void {
-        if (
-            this.m_featureModifier !== undefined &&
-            !this.m_featureModifier.doProcessLineFeature(layer, env, storageLevel)
-        ) {
-            return;
+        if (this.m_featureModifiers !== undefined) {
+            this.m_featureModifiers.forEach(fm => {
+                if (!fm.doProcessLineFeature(layer, env, storageLevel)) {
+                    return;
+                }
+            });
         }
 
         const techniques = this.applyKindFilter(
@@ -314,11 +318,12 @@ export class OmvDecoder implements IGeometryProcessor {
         env: MapEnv,
         storageLevel: number
     ): void {
-        if (
-            this.m_featureModifier !== undefined &&
-            !this.m_featureModifier.doProcessPolygonFeature(layer, env, storageLevel)
-        ) {
-            return;
+        if (this.m_featureModifiers !== undefined) {
+            this.m_featureModifiers.forEach(fm => {
+                if (!fm.doProcessPolygonFeature(layer, env, storageLevel)) {
+                    return;
+                }
+            });
         }
 
         const techniques = this.applyKindFilter(
@@ -373,7 +378,7 @@ export class OmvDecoder implements IGeometryProcessor {
 export class OmvTileDecoder extends ThemedTileDecoder {
     private m_showMissingTechniques: boolean = false;
     private m_featureFilter?: OmvFeatureFilter;
-    private m_featureModifier?: OmvFeatureModifier;
+    private m_featureModifiers?: OmvFeatureModifier[];
     private m_gatherFeatureAttributes: boolean = false;
     private m_skipShortLabels: boolean = true;
     private m_enableElevationOverlay: boolean = false;
@@ -397,7 +402,7 @@ export class OmvTileDecoder extends ThemedTileDecoder {
             styleSetEvaluator,
             this.m_showMissingTechniques,
             this.m_featureFilter,
-            this.m_featureModifier,
+            this.m_featureModifiers,
             this.m_gatherFeatureAttributes,
             this.m_skipShortLabels,
             this.m_storageLevelOffset,
@@ -428,21 +433,38 @@ export class OmvTileDecoder extends ThemedTileDecoder {
                 this.m_showMissingTechniques = omvOptions.showMissingTechniques === true;
             }
 
-            if (omvOptions && omvOptions.filterDescription !== undefined) {
+            if (omvOptions.filterDescription !== undefined) {
                 if (omvOptions.filterDescription !== null) {
-                    // create new filter/modifier from description
-                    this.m_featureFilter = new OmvGenericFeatureFilter(
-                        omvOptions.filterDescription
-                    );
-                    this.m_featureModifier = this.createFeatureModifier(
-                        omvOptions.filterDescription,
-                        omvOptions.featureModifierId,
-                        omvOptions.politicalView
-                    );
+                    // TODO: Check why feature modifier is always used only with feature filter.
+                    // Probably the filtering feature should be excluded from other feature
+                    // modifiers and be performed solely via OmvGenericFeature modifier.
+                    const filterDescription = omvOptions.filterDescription;
+                    const featureModifiersIds = omvOptions.featureModifiers;
+                    const politicalView = omvOptions.politicalView;
+                    // create new filter from description
+                    this.m_featureFilter = new OmvGenericFeatureFilter(filterDescription);
+                    // create feature modifiers
+                    if (featureModifiersIds !== undefined) {
+                        const featureModifiers: OmvFeatureModifier[] = [];
+                        featureModifiersIds.forEach(fmId => {
+                            featureModifiers.push(
+                                this.createFeatureModifier(filterDescription, fmId, politicalView)
+                            );
+                        });
+                        this.m_featureModifiers = featureModifiers;
+                    } else {
+                        this.m_featureModifiers = [
+                            this.createFeatureModifier(
+                                filterDescription,
+                                FeatureModifierId.default,
+                                politicalView
+                            )
+                        ];
+                    }
                 } else {
                     // null is the signal to clear the filter/modifier
                     this.m_featureFilter = undefined;
-                    this.m_featureModifier = undefined;
+                    this.m_featureModifiers = undefined;
                 }
             }
 
@@ -464,34 +486,22 @@ export class OmvTileDecoder extends ThemedTileDecoder {
     private createFeatureModifier(
         filterDescription: OmvFeatureFilterDescription,
         featureModifierId?: FeatureModifierId,
-        respectedPov?: string | null
+        respectedPov?: string
     ): OmvFeatureModifier {
-        if (featureModifierId === FeatureModifierId.tomTom) {
-            assert(
-                respectedPov === undefined,
-                "TomTom does not support different political views!"
-            );
-            return new OmvTomTomFeatureModifier(filterDescription);
-        } else if (
-            respectedPov !== undefined &&
-            respectedPov !== null &&
-            respectedPov.length === 2
-        ) {
-            return new OmvPoliticalViewFeatureModifier(filterDescription, [respectedPov]);
-        } else {
-            // TODO: Remove validation from here and provide the stack of
-            // features modifiers as discussed in solutioning.
-            assert(
-                respectedPov === undefined || respectedPov === null || respectedPov.length === 2,
-                "The point of view (political view) must be specified in two letters  ISO 3166-1 standard!"
-            );
-            assert(
-                featureModifierId !== FeatureModifierId.pointOfView ||
-                    respectedPov === undefined ||
-                    respectedPov === null,
-                "FeatureModifierId.pointOfView requires point of view to be specified and not null!"
-            );
-            return new OmvGenericFeatureModifier(filterDescription);
+        switch (featureModifierId) {
+            case FeatureModifierId.tomTom:
+                return new OmvTomTomFeatureModifier(filterDescription);
+            case FeatureModifierId.pointOfView:
+                assert(
+                    respectedPov !== undefined && respectedPov.length === 2,
+                    "The point of view (political view) must be specified in two letters  ISO 3166-1 standard!"
+                );
+                return new OmvPoliticalViewFeatureModifier(filterDescription, respectedPov!);
+            case FeatureModifierId.default:
+                return new OmvGenericFeatureModifier(filterDescription);
+            default:
+                assert(!"Unrecognized feature modifier id, using default!");
+                return new OmvGenericFeatureModifier(filterDescription);
         }
     }
 }

@@ -10,6 +10,13 @@ import { Value } from "@here/harp-datasource-protocol/index-decoder";
  */
 export enum FeatureModifierId {
     /**
+     * Generic feature modifier used when no other modifiers are defined.
+     *
+     * @note You do not need to specify it in [[OmvDataSourceParameters]] as it is added by default
+     * if no other feature modifier is used.
+     */
+    default,
+    /**
      * Identifier to use the OmvTomTomFeatureModifier in the OmvDecoder.
      */
     tomTom,
@@ -186,17 +193,22 @@ export interface OmvDecoderOptions {
      */
     filterDescription?: OmvFeatureFilterDescription | null;
 
+    // NOTE: Consider using OmvFeatureModifiers objects already instead of ids, this way we could
+    // get rid of politicalView property as properly configured feature modifier (with country
+    // code), would be already defined here.
     /**
-     * Identifier used to choose OmvFeatureModifier, if undefined [[OmvGenericFeatureModifier]] is
-     * used.
+     * List of [[OmvFeatureModifier]]s ids - position in the list declares the order of processing.
+     *
+     * Each identifier is used to choose corresponding OmvFeatureModifier, if undefined at least
+     * [[OmvGenericFeatureModifier]] is added to decoder.
      */
-    featureModifierId?: FeatureModifierId;
+    featureModifiers?: FeatureModifierId[];
 
     /**
      * Country code in ISO 3166-1 alpha-2 format defining optional point of view to be used.
-     * Set to `null` if you want to use default (commonly accepted) point of view.
+     * Set to `undefined` if you want to use default (commonly accepted) point of view.
      */
-    politicalView?: string | null;
+    politicalView?: string;
 
     enableElevationOverlay?: boolean;
 }

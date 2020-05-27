@@ -118,19 +118,23 @@ export interface OmvDataSourceParameters extends DataSourceOptions {
     tileFactory?: TileFactory<OmvTile>;
 
     /**
-     * Identifier used to choose OmvFeatureModifier, if undefined [[OmvGenericFeatureModifier]] is
-     * used only if [[politicalView]] is undefined, otherwise [[OmvPoliticalViewFeatureModifier]]
-     * will be used.
-     * This parameter gets applied to the decoder used in the [[OmvDataSource]] which might
+     * List of identifiers used to choose [[OmvFeatureModifier]]s to be applied.
+     *
+     * If left `undefined` at least [[OmvGenericFeatureModifier]] will be applied.
+     * The list of feature modifiers may be extended internally by some data source options
+     * such as [[politicalView]] which adds [[OmvPoliticalViewFeatureModifier]].
+     *
+     * @note This parameter gets applied to the decoder used in the [[OmvDataSource]] which might
      * be shared between various [[OmvDataSource]]s.
      */
-    featureModifierId?: FeatureModifierId;
+    featureModifiers?: FeatureModifierId[];
 
     /**
      * Expresses specific country point of view that is used when rendering disputed features,
      * like borders, names, etc. If undefined "defacto" or most widely accepted political view
      * will be presented.
-     * @see featureModifierId
+     *
+     * @see featureModifiers
      */
     politicalView?: string;
 
@@ -213,7 +217,7 @@ export class OmvDataSource extends TileDataSource<OmvTile> {
             showMissingTechniques: this.m_params.showMissingTechniques === true,
             filterDescription: this.m_params.filterDescr,
             gatherFeatureAttributes: this.m_params.gatherFeatureAttributes === true,
-            featureModifierId: this.m_params.featureModifierId,
+            featureModifiers: this.m_params.featureModifiers,
             politicalView: this.m_params.politicalView,
             skipShortLabels: this.m_params.skipShortLabels,
             storageLevelOffset: getOptionValue(m_params.storageLevelOffset, -1),
@@ -285,13 +289,25 @@ export class OmvDataSource extends TileDataSource<OmvTile> {
     }
 
     /** @override */
-    setPoliticalView(pointOfView?: string): void {
-        if (this.m_decoderOptions.politicalView !== pointOfView) {
-            this.m_decoderOptions.politicalView = pointOfView;
+    setPoliticalView(politicalView?: string): void {
+        if (this.m_decoderOptions.politicalView !== politicalView) {
+            this.m_decoderOptions.politicalView = politicalView;
+            let featureModifiers = this.m_decoderOptions.featureModifiers;
+            if (featureModifiers && !featureModifiers?.includes(FeatureModifierId.pointOfView)) {
+                // Append to the end of list.
+                // TODO: The functionality of other feature modifiers should be domain specific so
+                // filtering would be done only via [[OmvGenericFeatureModifier]] which should be
+                // append to the end of list, or even better done solely in [[OmvFeatureFilter]]
+                featureModifiers.push(FeatureModifierId.pointOfView);
+            } else if (!featureModifiers) {
+                featureModifiers = this.m_decoderOptions.featureModifiers = [
+                    FeatureModifierId.pointOfView
+                ];
+            }
             this.configureDecoder(undefined, undefined, undefined, {
                 filterDescription: this.m_decoderOptions.filterDescription,
-                featureModifierId: FeatureModifierId.pointOfView,
-                politicalView: pointOfView
+                featureModifiers,
+                politicalView
             });
         }
     }
