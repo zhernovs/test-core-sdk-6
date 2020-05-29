@@ -1,9 +1,5 @@
-image: ubuntu
-
-build:
-  stage: build
-  tags:
-    - docker-prod
-  script:
-    - echo "Hi there!"
+trigger_internal_ci:
+  trigger:
+    project: zhernovs/test-sdk-6
+    strategy: depend
 
