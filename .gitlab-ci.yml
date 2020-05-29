@@ -1,0 +1,9 @@
+image: ubuntu
+
+build:
+  stage: build
+  tags:
+    - docker-prod
+  script:
+    - echo "Hi there!"
+
