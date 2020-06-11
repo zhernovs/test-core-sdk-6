@@ -17,6 +17,7 @@ trigger_internal_ci:
   trigger:
     project: zhernovs/test-sdk-6
     strategy: depend
+    # Until we can use this: https://gitlab.com/gitlab-org/gitlab/-/issues/22638 it will fail if no such branch in downstream project
     branch: $CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME
   only:
     - external_pull_requests
