@@ -1,14 +1,3 @@
-check_vars:
-  image: ubuntu
-  tags:
-    - docker-prod
-  script:
-    - echo "Environment variables"
-    - env
-  only:
-    - external_pull_requests
-
-
 trigger_internal_ci:
   variables:
     EXT_PULL_REQUEST_TARGET_BRANCH_NAME: $CI_EXTERNAL_PULL_REQUEST_TARGET_BRANCH_NAME
