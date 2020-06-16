@@ -13,7 +13,7 @@ check_branch_existance:
     - external_pull_requests
   
 
-trigger_internal_ci:
+.trigger_internal_ci:
   stage: trigger
   variables:
     EXT_PULL_REQUEST_TARGET_BRANCH_NAME: $CI_EXTERNAL_PULL_REQUEST_TARGET_BRANCH_NAME
@@ -22,8 +22,19 @@ trigger_internal_ci:
   trigger:
     project: zhernovs/test-sdk-6
     strategy: depend
-    # Until we can use this: https://gitlab.com/gitlab-org/gitlab/-/issues/22638 it will fail if no such branch in downstream project
+    # Until we can use this: https://docs.gitlab.com/ee/ci/variables/README.html#inherit-environment-variables it will fail if no such branch in downstream project
     branch: $TRIGGER_BRANCH
+  needs:
+    - job: check_branch_existance
+      artifacts: true  
+  only:
+    - external_pull_requests
+
+  
+test_inherited_var_feature:
+  stage: trigger
+  script:
+    - echo "VAR: $TRIGGER_BRANCH" 
   needs:
     - job: check_branch_existance
       artifacts: true  
