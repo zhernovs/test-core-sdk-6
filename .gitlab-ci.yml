@@ -6,7 +6,7 @@ check_branch_existance:
   stage: check
   script:
     - TRIGGER_BRANCH=${CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME}
-    - curl --fail --silent --show-error --request GET --header "PRIVATE-TOKEN: iQFxVogVMLQJyMXsCcUL" "https://main.gitlab.in.here.com/api/v4/projects/7121/repository/branches/${CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME}" || TRIGGER_BRANCH=master
+    - curl --fail --silent --show-error --request GET --header "PRIVATE-TOKEN:iQFxVogVMLQJyMXsCcUL" "https://main.gitlab.in.here.com/api/v4/projects/7121/repository/branches/${CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME}" || TRIGGER_BRANCH=master
     - echo "TRIGGER_BRANCH=${TRIGGER_BRANCH}" >> vars.env #mock
   artifacts:
     reports:
