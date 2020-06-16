@@ -4,6 +4,7 @@ stages:
 
 check_branch_existance:
   stage: check
+  image: ubuntu
   tags: 
     - docker-prod
   variables:
