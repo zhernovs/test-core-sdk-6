@@ -4,7 +4,8 @@ stages:
 
 check_branch_existance:
   stage: check
-  tags: docker-prod
+  tags: 
+    - docker-prod
   variables:
     GIT_STRATEGY: none
   script:
