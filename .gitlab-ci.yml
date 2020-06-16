@@ -5,7 +5,7 @@ stages:
 check_branch_existance:
   stage: check
   script:
-    - echo TRIGGER_BRANCH=feature-13 >> vars.env #mock
+    - echo "TRIGGER_BRANCH=feature-13" >> vars.env #mock
   artifacts:
     reports:
       dotenv: vars.env  
