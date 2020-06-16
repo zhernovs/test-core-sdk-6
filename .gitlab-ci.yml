@@ -1,4 +1,20 @@
+stages:
+  - check
+  - trigger
+
+check_branch_existance:
+  stage: check
+  script:
+    - echo TRIGGER_BRANCH=feature-13 >> vars.env #mock
+  artifacts:
+    reports:
+      dotenv: vars.env  
+  only:
+    - external_pull_requests
+  
+
 trigger_internal_ci:
+  stage: trigger
   variables:
     EXT_PULL_REQUEST_TARGET_BRANCH_NAME: $CI_EXTERNAL_PULL_REQUEST_TARGET_BRANCH_NAME
     EXT_PULL_REQUEST_SOURCE_BRANCH_NAME: $CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME
@@ -7,6 +23,8 @@ trigger_internal_ci:
     project: zhernovs/test-sdk-6
     strategy: depend
     # Until we can use this: https://gitlab.com/gitlab-org/gitlab/-/issues/22638 it will fail if no such branch in downstream project
-    branch: $CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME
+    branch: $TRIGGER_BRANCH
+  dependencies:
+    - check_branch_existance
   only:
     - external_pull_requests
