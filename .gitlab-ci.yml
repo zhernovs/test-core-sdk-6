@@ -4,7 +4,7 @@ stages:
 
 check_branch_existance:
   stage: check
-  image: ubuntu
+  image: curlimages/curl
   tags: 
     - docker-prod
   variables:
