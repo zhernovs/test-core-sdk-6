@@ -34,7 +34,7 @@ check_branch_existance:
 test_inherited_var_feature:
   stage: trigger
   script:
-    - echo "VAR: $TRIGGER_BRANCH" 
+    - echo "VAR $TRIGGER_BRANCH" 
   needs:
     - job: check_branch_existance
       artifacts: true  
