@@ -1,5 +1,49 @@
-trigger_internal_ci:
-  trigger:
-    project: zhernovs/test-sdk-6
-    strategy: depend
+stages:
+  - check
+  - trigger
 
+check_branch_existance:
+  stage: check
+  image: curlimages/curl
+  tags: 
+    - docker-prod
+  variables:
+    GIT_STRATEGY: none
+  script:
+    - TRIGGER_BRANCH=${CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME}
+    - curl --fail --silent --show-error --request GET --header "PRIVATE-TOKEN:iQFxVogVMLQJyMXsCcUL" "https://main.gitlab.in.here.com/api/v4/projects/7121/repository/branches/${CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME}" || TRIGGER_BRANCH=master
+    - echo "TRIGGER_BRANCH=${TRIGGER_BRANCH}" >> vars.env #mock
+  artifacts:
+    reports:
+      dotenv: vars.env  
+  only:
+    - external_pull_requests
+  
+
+#trigger_internal_ci:
+#  stage: trigger
+#  variables:
+#    EXT_PULL_REQUEST_TARGET_BRANCH_NAME: $CI_EXTERNAL_PULL_REQUEST_TARGET_BRANCH_NAME
+#    EXT_PULL_REQUEST_SOURCE_BRANCH_NAME: $CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME
+#    EXT_PULL_REQUEST_IID: $CI_EXTERNAL_PULL_REQUEST_IID
+#  trigger:
+#    project: zhernovs/test-sdk-6
+#    strategy: depend
+#    # Until we can use this: https://docs.gitlab.com/ee/ci/variables/README.html#inherit-environment-variables it will fail if no such branch in downstream project
+#    branch: $TRIGGER_BRANCH
+#  needs:
+#    - job: check_branch_existance
+#      artifacts: true  
+#  only:
+#    - external_pull_requests
+
+  
+test_inherited_var_feature:
+  stage: trigger
+  script:
+    - echo "VAR $TRIGGER_BRANCH" 
+  needs:
+    - job: check_branch_existance
+      artifacts: true  
+  only:
+    - external_pull_requests
