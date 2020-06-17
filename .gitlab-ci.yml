@@ -2,6 +2,13 @@ stages:
   - check
   - trigger
 
+default:
+  interruptible: true
+
+workflow:
+  rules:
+    - if: $CI_EXTERNAL_PULL_REQUEST_IID
+
 check_branch_existance:
   stage: check
   image: curlimages/curl
@@ -16,8 +23,6 @@ check_branch_existance:
   artifacts:
     reports:
       dotenv: vars.env  
-  only:
-    - external_pull_requests
   
 
 #trigger_internal_ci:
@@ -34,8 +39,6 @@ check_branch_existance:
 #  needs:
 #    - job: check_branch_existance
 #      artifacts: true  
-#  only:
-#    - external_pull_requests
 
   
 test_inherited_var_feature:
@@ -45,5 +48,3 @@ test_inherited_var_feature:
   needs:
     - job: check_branch_existance
       artifacts: true  
-  only:
-    - external_pull_requests
