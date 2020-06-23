@@ -41,10 +41,11 @@ trigger_internal_ci:
     # Until we can use this: https://docs.gitlab.com/ee/ci/variables/README.html#inherit-environment-variables it will fail if no such branch in downstream project
 #    branch: "$TRIGGER_BRANCH"
     branch: feature-12
-  needs:
-    - job: check_branch_existance
-      artifacts: true  
-
+#  needs:
+#    - job: check_branch_existance
+#      artifacts: true  
+  dependencies:
+    - check_branch_existance
   
 #test_inherited_var_feature:
 #  stage: trigger
