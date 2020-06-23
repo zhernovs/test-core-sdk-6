@@ -18,11 +18,14 @@ check_branch_existance:
     GIT_STRATEGY: none
   script:
     - TRIGGER_BRANCH=${CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME}
-    - curl --fail --silent --show-error --request GET --header "PRIVATE-TOKEN:iQFxVogVMLQJyMXsCcUL" "https://main.gitlab.in.here.com/api/v4/projects/7121/repository/branches/${CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME}" || TRIGGER_BRANCH=master
-    - echo "TRIGGER_BRANCH=${TRIGGER_BRANCH}" >> vars.env #mock
+    - curl --fail --silent --show-error --request GET --header "PRIVATE-TOKEN:iQFxVogVMLQJyMXsCcUL" "https://main.gitlab.in.here.com/api/v4/projects/7121/repository/branches/${CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME}" || TRIGGER_BRANCH='master'
+    - echo "__DEBUG__ TRIGGER_BRANCH=${TRIGGER_BRANCH}"
+    - echo "TRIGGER_BRANCH=${TRIGGER_BRANCH}" > vars.env
   artifacts:
     reports:
-      dotenv: vars.env  
+      dotenv: vars.env
+    paths: 
+    - vars.env
   
 
 trigger_internal_ci:
