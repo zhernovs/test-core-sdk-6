@@ -35,7 +35,7 @@ trigger_internal_ci:
     project: zhernovs/test-sdk-6
     strategy: depend
     # Until we can use this: https://docs.gitlab.com/ee/ci/variables/README.html#inherit-environment-variables it will fail if no such branch in downstream project
-    branch: $TRIGGER_BRANCH
+    branch: "$TRIGGER_BRANCH"
   needs:
     - job: check_branch_existance
       artifacts: true  
