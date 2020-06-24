@@ -35,7 +35,7 @@ trigger_internal_ci:
   variables:
     GIT_STRATEGY: none
   script:
-    - curl --fail --silent --show-error --request POST --form "token=$CI_JOB_TOKEN" --form ref=${TRIGGER_BRANCH} "https://main.gitlab.in.here.com/api/v4/projects/7121/trigger/pipeline"
+    - curl --fail --silent --show-error --request POST --form "token=$CI_JOB_TOKEN" --form ref=${TRIGGER_BRANCH} --form strategy=depend "https://main.gitlab.in.here.com/api/v4/projects/7121/trigger/pipeline"
   needs:
     - job: check_branch_existance
       artifacts: true 
