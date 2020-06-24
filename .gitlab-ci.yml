@@ -27,25 +27,30 @@ check_branch_existance:
     paths: 
     - vars.env
   
-
 trigger_internal_ci:
   stage: trigger
-  variables:
-    EXT_PULL_REQUEST_TARGET_BRANCH_NAME: $CI_EXTERNAL_PULL_REQUEST_TARGET_BRANCH_NAME
-    EXT_PULL_REQUEST_SOURCE_BRANCH_NAME: $CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME
-    EXT_PULL_REQUEST_IID: $CI_EXTERNAL_PULL_REQUEST_IID
-    TRIGGER_BRANCH: $TRIGGER_BRANCH
-  trigger:
-    project: zhernovs/test-sdk-6
-    strategy: depend
-    # Until we can use this: https://docs.gitlab.com/ee/ci/variables/README.html#inherit-environment-variables it will fail if no such branch in downstream project
-#    branch: "$TRIGGER_BRANCH"
-    branch: feature-12
-#  needs:
-#    - job: check_branch_existance
-#      artifacts: true  
-  dependencies:
-    - check_branch_existance
+  script:
+    - curl --fail --silent --show-error --request POST --form "token=$CI_JOB_TOKEN" --form ref=${TRIGGER_BRANCH} "https://main.gitlab.in.here.com/api/v4/projects/7121/trigger/pipeline"
+  needs:
+    - job: check_branch_existance
+      artifacts: true 
+
+# trigger_internal_ci:
+#   stage: trigger
+#   variables:
+#     EXT_PULL_REQUEST_TARGET_BRANCH_NAME: $CI_EXTERNAL_PULL_REQUEST_TARGET_BRANCH_NAME
+#     EXT_PULL_REQUEST_SOURCE_BRANCH_NAME: $CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME
+#     EXT_PULL_REQUEST_IID: $CI_EXTERNAL_PULL_REQUEST_IID
+#     TRIGGER_BRANCH: $TRIGGER_BRANCH
+#   trigger:
+#     project: zhernovs/test-sdk-6
+#     strategy: depend
+#     # Until we can use this: https://docs.gitlab.com/ee/ci/variables/README.html#inherit-environment-variables it will fail if no such branch in downstream project
+# #    branch: "$TRIGGER_BRANCH"
+#     branch: feature-12
+#   needs:
+#     - job: check_branch_existance
+#       artifacts: true  
   
 #test_inherited_var_feature:
 #  stage: trigger
