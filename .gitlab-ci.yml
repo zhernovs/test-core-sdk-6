@@ -29,6 +29,11 @@ check_branch_existance:
   
 trigger_internal_ci:
   stage: trigger
+  image: curlimages/curl
+  tags: 
+    - docker-prod
+  variables:
+    GIT_STRATEGY: none
   script:
     - curl --fail --silent --show-error --request POST --form "token=$CI_JOB_TOKEN" --form ref=${TRIGGER_BRANCH} "https://main.gitlab.in.here.com/api/v4/projects/7121/trigger/pipeline"
   needs:
