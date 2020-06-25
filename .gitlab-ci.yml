@@ -26,11 +26,11 @@ check_branch_existance:
 # to bridge job (trigger_internal_ci). So far it's impossible in other way
 bridge_for_bridge:
   stage: trigger
-  strategy: depend
   trigger:
     include:
       - artifact: generated-config.yml
         job: check_branch_existance
+    strategy: depend
 
 
   
