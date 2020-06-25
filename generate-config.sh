@@ -15,7 +15,7 @@
 cat > generated-config.yml <<HEREDOC
 test_inherited_var_feature:
   script:
-    - echo 'eh'
+    - echo "VAR $TRIGGER_BRANCH"
 HEREDOC
 
 
