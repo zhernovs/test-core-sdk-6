@@ -14,9 +14,8 @@
 
 cat > generated-config.yml <<HEREDOC
 test_inherited_var_feature:
-  stage: trigger
   script:
-    - env
+    - echo 'eh'
 HEREDOC
 
 
