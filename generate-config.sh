@@ -12,9 +12,6 @@
 #     branch: $TRIGGER_BRANCH" > generated-config.yml
 
 echo "test_inherited_var_feature:
- stage: trigger
- script:
-   - echo \"VAR $TRIGGER_BRANCH\" 
- needs:
-   - job: check_branch_existance
-     artifacts: true" > generated-config.yml
+  stage: trigger
+  script:
+    - env" > generated-config.yml
