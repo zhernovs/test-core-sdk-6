@@ -11,7 +11,12 @@
 #     strategy: depend
 #     branch: $TRIGGER_BRANCH" > generated-config.yml
 
-echo "test_inherited_var_feature:
+
+cat > generated-config.yml <<HEREDOC
+test_inherited_var_feature:
   stage: trigger
   script:
-    - env" > generated-config.yml
+    - env
+HEREDOC
+
+
