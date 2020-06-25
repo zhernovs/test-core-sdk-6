@@ -21,18 +21,7 @@ check_branch_existance:
     - curl --fail --silent --show-error --request GET --header "PRIVATE-TOKEN:iQFxVogVMLQJyMXsCcUL" "https://main.gitlab.in.here.com/api/v4/projects/7121/repository/branches/${CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME}" || TRIGGER_BRANCH='master'
     - echo "__DEBUG__ TRIGGER_BRANCH=${TRIGGER_BRANCH}"
     - echo "TRIGGER_BRANCH=$TRIGGER_BRANCH" >> vars.env
-    - |
-      echo "trigger_internal_ci:
-  stage: trigger
-  variables:
-    EXT_PULL_REQUEST_TARGET_BRANCH_NAME: $CI_EXTERNAL_PULL_REQUEST_TARGET_BRANCH_NAME
-    EXT_PULL_REQUEST_SOURCE_BRANCH_NAME: $CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME
-    EXT_PULL_REQUEST_IID: $CI_EXTERNAL_PULL_REQUEST_IID
-    TRIGGER_BRANCH: $TRIGGER_BRANCH
-  trigger:
-    project: zhernovs/test-sdk-6
-    strategy: depend
-    branch: $TRIGGER_BRANCH" > generated-config.yml
+    - ./generate-config.sh
   artifacts:
     reports:
       dotenv: vars.env
