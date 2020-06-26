@@ -16,7 +16,11 @@ check_branch_existance:
     - docker-prod
   script:
     - export TRIGGER_BRANCH=${CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME}
-    - curl --fail --silent --show-error --request GET --header "PRIVATE-TOKEN:iQFxVogVMLQJyMXsCcUL" "https://main.gitlab.in.here.com/api/v4/projects/7121/repository/branches/${CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME}" || export TRIGGER_BRANCH='master'
+    -| 
+      curl --fail --silent --show-error --request GET --header \
+      "PRIVATE-TOKEN:${TEST_SDK_6_TOKEN}" \
+      "https://main.gitlab.in.here.com/api/v4/projects/7121/repository/branches/${CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME}" \
+        || export TRIGGER_BRANCH='master'
     - ./generate-config.sh
   artifacts:
     paths: 
@@ -33,20 +37,7 @@ bridge_for_bridge:
     strategy: depend
 
 
-  
-# trigger_internal_ci_api:
-#   stage: trigger
-#   image: curlimages/curl
-#   tags: 
-#     - docker-prod
-#   variables:
-#     GIT_STRATEGY: none
-#   script:
-#     - curl --fail --silent --show-error --request POST --form "token=$CI_JOB_TOKEN" --form ref=${TRIGGER_BRANCH} --form strategy=depend "https://main.gitlab.in.here.com/api/v4/projects/7121/trigger/pipeline"
-#   needs:
-#     - job: check_branch_existance
-#       artifacts: true 
-
+# # So far environment variables can't be passed to the bridge job. Once it became available we could use following:
 # trigger_internal_ci:
 #   stage: trigger
 #   variables:
@@ -63,11 +54,3 @@ bridge_for_bridge:
 #   needs:
 #     - job: check_branch_existance
 #       artifacts: true  
-  
-#test_inherited_var_feature:
-#  stage: trigger
-#  script:
-#    - echo "VAR $TRIGGER_BRANCH" 
-#  needs:
-#    - job: check_branch_existance
-#      artifacts: true  
