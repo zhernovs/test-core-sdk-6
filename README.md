@@ -238,3 +238,5 @@ See the [LICENSE](./LICENSE) file in the root of this project for license detail
 In addition, please note that the [fonts](https://github.com/heremaps/harp-fontcatalog) are under a different set of licenses.
 
 For other use cases not listed in the license terms, please [contact us](https://developer.here.com/contact-us).
+
+## test change in gitlab CI
