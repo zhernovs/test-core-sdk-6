@@ -240,3 +240,4 @@ In addition, please note that the [fonts](https://github.com/heremaps/harp-fontc
 For other use cases not listed in the license terms, please [contact us](https://developer.here.com/contact-us).
 
 ## test change in gitlab CI
+yet another change
