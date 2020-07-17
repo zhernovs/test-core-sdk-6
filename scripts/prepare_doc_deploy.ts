@@ -72,7 +72,7 @@ if (branch !== "master") {
         version: mapviewPackage.version
     };
 
-    fetch("https://heremaps.github.io/harp.gl/releases.json")
+    fetch("https://www.harp.gl/releases.json")
         .then((res: Response) => {
             return res.json();
         })
