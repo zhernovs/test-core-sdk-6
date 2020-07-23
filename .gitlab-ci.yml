@@ -22,10 +22,10 @@ check_branch_existance:
       "${CI_SERVER_URL}/api/v4/projects/7121/repository/branches/${CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME}" \
         || export TRIGGER_BRANCH='master'
     - echo "Going to trigger pipeline on ${TRIGGER_BRANCH} branch in downstream project (mapsdk)"
-    - ./generate-config.sh
+    - ./scripts/generate-child-job.sh
   artifacts:
     paths: 
-      - generated-config.yml
+      - generated-child-job.yml
 
 # All this magic including generate-config.sh is only to pass TRIGGER_BRANCH variable 
 # to bridge job (trigger_internal_ci). So far it's impossible in other way
