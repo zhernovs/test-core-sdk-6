@@ -15,8 +15,3 @@ trigger_internal_ci:
     branch: $TRIGGER_BRANCH
 HEREDOC
 
-# cat > generated-config.yml <<HEREDOC
-# test_inherited_var_feature:
-#   script:
-#     - echo "VAR $TRIGGER_BRANCH"
-# HEREDOC

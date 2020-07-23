@@ -21,7 +21,7 @@ check_branch_existance:
       "PRIVATE-TOKEN:${TEST_SDK_6_TOKEN}" \
       "${CI_SERVER_URL}/api/v4/projects/7121/repository/branches/${CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME}" \
         || export TRIGGER_BRANCH='master'
-    - echo "Going to trigger pipeline on ${TRIGGER_BRANCH} in downstream project (mapsdk)"
+    - echo "Going to trigger pipeline on ${TRIGGER_BRANCH} branch in downstream project (mapsdk)"
     - ./generate-config.sh
   artifacts:
     paths: 
