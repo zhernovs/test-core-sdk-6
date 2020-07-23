@@ -33,7 +33,7 @@ bridge_for_bridge:
   stage: trigger
   trigger:
     include:
-      - artifact: generated-config.yml
+      - artifact: generated-child-job.yml
         job: check_branch_existance
     strategy: depend
 

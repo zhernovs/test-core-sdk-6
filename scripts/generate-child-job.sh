@@ -1,5 +1,5 @@
 #!/bin/sh
-cat > ../generated-child-job.yml <<HEREDOC
+cat > generated-child-job.yml <<HEREDOC
 stages:
   - trigger
 trigger_internal_ci:
