@@ -17,14 +17,15 @@ check_branch_existance:
   script:
     - export TRIGGER_BRANCH=${CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME}
     - | 
-      curl --fail --silent --show-error --request GET --header \
+      curl -fksSL --fail --silent --show-error --request GET --header \
       "PRIVATE-TOKEN:${TEST_SDK_6_TOKEN}" \
-      "https://main.gitlab.in.here.com/api/v4/projects/7121/repository/branches/${CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME}" \
+      "${CI_SERVER_URL}/api/v4/projects/7121/repository/branches/${CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME}" \
         || export TRIGGER_BRANCH='master'
-    - ./generate-config.sh
+    - echo "Going to trigger pipeline on ${TRIGGER_BRANCH} branch in downstream project (id 7121)"
+    - ./scripts/generate-child-job.sh
   artifacts:
     paths: 
-      - generated-config.yml
+      - generated-child-job.yml
 
 # All this magic including generate-config.sh is only to pass TRIGGER_BRANCH variable 
 # to bridge job (trigger_internal_ci). So far it's impossible in other way
@@ -32,7 +33,7 @@ bridge_for_bridge:
   stage: trigger
   trigger:
     include:
-      - artifact: generated-config.yml
+      - artifact: generated-child-job.yml
         job: check_branch_existance
     strategy: depend
 
