@@ -22,18 +22,19 @@ trigger_internal_ci:
     - export TRIGGER_BRANCH=${CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME}
     - |
       curl -fksSL --header \
-      "PRIVATE-TOKEN:${TEST_SDK_6_TOKEN}" \
+      "PRIVATE-TOKEN:${SVC_HLS_RENDER_API}" \
       "${CI_SERVER_URL}/api/v4/projects/${DOWNSTREAM_PROJECT_ID}/repository/branches/${CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME}" \
         || export TRIGGER_BRANCH='master'
     - echo "Going to trigger pipeline on ${TRIGGER_BRANCH} branch in downstream project (id ${DOWNSTREAM_PROJECT_ID})"
     # Trigger downstream project and wait for it. 
     - |
-      resp=$(curl -fksSL --request POST --form "token=$CI_JOB_TOKEN" --form "ref=${TRIGGER_BRANCH}" ${CI_SERVER_URL}/api/v4/projects/${DOWNSTREAM_PROJECT_ID}/trigger/pipeline)
+      resp=$(curl -fksSL --request POST --form "token=${SVC_HLS_RENDER_API}" --form "ref=${TRIGGER_BRANCH}" ${CI_SERVER_URL}/api/v4/projects/${DOWNSTREAM_PROJECT_ID}/trigger/pipeline)
       id=$(echo $resp | jq -r '.id')
       web_url=$(echo $resp | jq -r '.web_url')
       echo "Waiting for pipeline $web_url ..."
+      echo "[DEBUG] id = $id "
       for retry in $(seq 1 20); do
-        status=$(curl -s --header "JOB-TOKEN: $CI_JOB_TOKEN" "${CI_SERVER_URL}/api/v4/projects/${DOWNSTREAM_PROJECT_ID}/pipelines/$id" | jq -r '.status')
+        status=$(curl -s --header "PRIVATE-TOKEN:${SVC_HLS_RENDER_API}" "${CI_SERVER_URL}/api/v4/projects/${DOWNSTREAM_PROJECT_ID}/pipelines/$id" | jq -r '.status')
         echo "Got pipeline status $status , retry $retry/10"
         [[ $status == "success" || $status == "failed" ]] && break
         sleep 15
