@@ -1,0 +1,23 @@
+name: Generate Docs
+
+env:
+    PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: true
+    GECKODRIVER_SKIP_DOWNLOAD: true
+    CHROMEDRIVER_SKIP_DOWNLOAD: true
+
+on:
+    workflow_dispatch
+
+jobs:
+    docs:
+        name: Generate Docs
+        runs-on: ubuntu-latest
+
+        steps:
+        - uses: actions/checkout@v1
+        - uses: actions/setup-node@v2
+        with:
+            node-version: '12'
+
+        run: yarn --frozen-lockfile
+        run: yarn docs
