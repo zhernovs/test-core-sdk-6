@@ -16,8 +16,9 @@ jobs:
         steps:
         - uses: actions/checkout@v1
         - uses: actions/setup-node@v2
-        with:
+          with:
             node-version: '12'
-
-        run: yarn --frozen-lockfile
-        run: yarn docs
+        - name: Install dependencies
+          run: yarn --frozen-lockfile
+        - name: Generate docs
+          run: yarn docs
