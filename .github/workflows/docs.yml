@@ -1,12 +1,13 @@
 name: Generate Docs
 
+on:
+    workflow_dispatch
+
 env:
     PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: true
     GECKODRIVER_SKIP_DOWNLOAD: true
     CHROMEDRIVER_SKIP_DOWNLOAD: true
 
-on:
-    - workflow_dispatch
 
 jobs:
     docs:
