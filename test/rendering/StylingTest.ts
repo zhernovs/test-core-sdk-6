@@ -746,7 +746,7 @@ describe("MapView Styling Test", function() {
                 coordinates: [
                     [
                         [0.004, 0.002],
-                        [-0.006, 0.002],
+                        [-0.007, 0.002],
                         [-0.005, -0.002],
                         [0.004, -0.002]
                     ]
