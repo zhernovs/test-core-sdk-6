@@ -728,7 +728,7 @@ describe("MapView Styling Test", function() {
             },
             {
                 type: "directional",
-                color: "#FFFFFF",
+                color: "#33c922",
                 name: "light1",
                 intensity: 0.5,
                 direction: {
