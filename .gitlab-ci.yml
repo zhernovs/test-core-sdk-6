@@ -1,5 +1,4 @@
 stages:
-  - check
   - trigger
 
 default:
@@ -9,34 +8,42 @@ workflow:
   rules:
     - if: $CI_EXTERNAL_PULL_REQUEST_IID
 
-check_branch_existance:
-  stage: check
-  image: curlimages/curl
+trigger_internal_ci:
+  stage: trigger
+  image: alpine
   tags: 
     - docker-prod
+  variables:
+    DOWNSTREAM_PROJECT_ID: 7121
+  before_script:
+    - apk add curl jq
   script:
+    # Check if feature branch exists in downstream project. Otherwise use master.
     - export TRIGGER_BRANCH=${CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME}
-    - | 
-      curl -fksSL --fail --silent --show-error --request GET --header \
+    - |
+      curl -fksSL --header \
       "PRIVATE-TOKEN:${SVC_HLS_RENDER_API}" \
-      "${CI_SERVER_URL}/api/v4/projects/7121/repository/branches/${CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME}" \
+      "${CI_SERVER_URL}/api/v4/projects/${DOWNSTREAM_PROJECT_ID}/repository/branches/${CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME}" \
         || export TRIGGER_BRANCH='master'
-    - echo "Going to trigger pipeline on ${TRIGGER_BRANCH} branch in downstream project (id 7121)"
-    - ./scripts/generate-child-job.sh
-  artifacts:
-    paths: 
-      - generated-child-job.yml
+    - echo "Going to trigger pipeline on ${TRIGGER_BRANCH} branch in downstream project (id ${DOWNSTREAM_PROJECT_ID})"
+    # Trigger downstream project and wait for it. 
+    - |
+      resp=$(curl -fksSL --request POST --form "token=${CI_JOB_TOKEN}" --form "ref=${TRIGGER_BRANCH}" ${CI_SERVER_URL}/api/v4/projects/${DOWNSTREAM_PROJECT_ID}/trigger/pipeline)
+      id=$(echo $resp | jq -r '.id')
+      web_url=$(echo $resp | jq -r '.web_url')
+      echo "Waiting for pipeline $web_url ..."
+      # Wait 30 mins (10 seconds x 180 times)
+      for retry in $(seq 1 180); do
+        status=$(curl -s --header "PRIVATE-TOKEN:${SVC_HLS_RENDER_API}" "${CI_SERVER_URL}/api/v4/projects/${DOWNSTREAM_PROJECT_ID}/pipelines/$id" | jq -r '.status')
+        echo "Got pipeline status $status, retry $retry/180"
+        [[ $status == "success" || $status == "failed" ]] && break
+        sleep 10
+      done
 
-# All this magic including generate-config.sh is only to pass TRIGGER_BRANCH variable 
-# to bridge job (trigger_internal_ci). So far it's impossible in other way
-bridge_for_bridge:
-  stage: trigger
-  trigger:
-    include:
-      - artifact: generated-child-job.yml
-        job: check_branch_existance
-    strategy: depend
-
+      if [[ $status != "success" ]]; then
+        echo "$web_url has status $status, failing"
+        exit 1
+      fi
 
 # # So far environment variables can't be passed to the bridge job. Once it became available we could use following:
 # trigger_internal_ci:
