@@ -4,10 +4,6 @@ stages:
 default:
   interruptible: true
 
-workflow:
-  rules:
-    - if: $CI_EXTERNAL_PULL_REQUEST_IID
-      when: manual
 
 trigger_internal_ci:
   stage: trigger
@@ -16,6 +12,9 @@ trigger_internal_ci:
     - docker-prod
   variables:
     DOWNSTREAM_PROJECT_ID: 7121
+  rules:
+    - if: $CI_EXTERNAL_PULL_REQUEST_IID
+      when: manual
   before_script:
     - apk add curl jq
   script:
