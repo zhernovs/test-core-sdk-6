@@ -1,4 +1,5 @@
 stages:
+  - check_author
   - trigger
 
 default:
@@ -7,6 +8,18 @@ default:
 workflow:
   rules:
     - if: $CI_EXTERNAL_PULL_REQUEST_IID
+
+check_author:
+  stage: check_author
+  rules:
+    - if: $CI_EXTERNAL_PULL_REQUEST_IID
+      when: manual
+  image: alpine
+  tags: 
+    - docker-prod
+  script: |
+    echo "Need to chekc the github payload"
+
 
 trigger_internal_ci:
   stage: trigger
