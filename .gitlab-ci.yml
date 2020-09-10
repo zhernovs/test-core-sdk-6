@@ -27,6 +27,7 @@ check_branch_existance:
     paths: 
       - generated-config.yml
 
+      
 # All this magic including generate-config.sh is only to pass TRIGGER_BRANCH variable 
 # to bridge job (trigger_internal_ci). So far it's impossible in other way
 bridge_for_bridge:
