@@ -28,7 +28,7 @@ trigger_internal_ci:
     - echo "Going to trigger pipeline on ${TRIGGER_BRANCH} branch in downstream project (id ${DOWNSTREAM_PROJECT_ID})"
     # Trigger downstream project and wait for it. 
     - |
-      resp=$(curl -fksSL --request POST --form "token=${CI_JOB_TOKEN}" --form "ref=${TRIGGER_BRANCH}" ${CI_SERVER_URL}/api/v4/projects/${DOWNSTREAM_PROJECT_ID}/trigger/pipeline)
+      resp=$(curl -fksSL --request POST --form "token=${CI_JOB_TOKEN}" --form "variables[CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME]=$CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME" --form "ref=${TRIGGER_BRANCH}" ${CI_SERVER_URL}/api/v4/projects/${DOWNSTREAM_PROJECT_ID}/trigger/pipeline)
       id=$(echo $resp | jq -r '.id')
       web_url=$(echo $resp | jq -r '.web_url')
       echo "Waiting for pipeline $web_url ..."
