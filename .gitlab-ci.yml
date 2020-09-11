@@ -17,6 +17,7 @@ trigger_internal_ci:
     DOWNSTREAM_PROJECT_ID: 7121
   before_script:
     - apk add curl jq
+    
   script:
     # Check if feature branch exists in downstream project. Otherwise use master.
     - export TRIGGER_BRANCH=${CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME}
