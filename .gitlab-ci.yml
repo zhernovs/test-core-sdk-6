@@ -45,6 +45,7 @@ trigger_internal_ci:
         exit 1
       fi
 
+
 # # So far environment variables can't be passed to the bridge job. Once it became available we could use following:
 # trigger_internal_ci:
 #   stage: trigger
