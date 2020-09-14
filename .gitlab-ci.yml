@@ -8,7 +8,6 @@ workflow:
   rules:
     - if: $CI_EXTERNAL_PULL_REQUEST_IID
 
-
 trigger_internal_ci:
   stage: trigger
   image: alpine
