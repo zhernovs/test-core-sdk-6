@@ -1,5 +1,5 @@
 stages:
-  - init
+  - build
   - trigger
 
 default:
@@ -10,7 +10,7 @@ workflow:
     - if: $CI_EXTERNAL_PULL_REQUEST_IID
 
 trigger_internal_ci:
-  stage: init
+  stage: build
   image: node
   tags: 
     - docker-prod
@@ -20,6 +20,7 @@ trigger_internal_ci:
     - |
       set -e
       echo $CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME
+      export TRIGGER_BRANCH=$CI_EXTERNAL_PULL_REQUEST_TARGET_BRANCH_NAME
       #Creating a new branch
         curl --request POST --header \
         "PRIVATE-TOKEN: $SVC_HLS_RENDER_API" \
