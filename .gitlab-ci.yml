@@ -11,7 +11,7 @@ workflow:
 
 trigger_internal_ci:
   stage: init
-  image: alpine
+  image: node
   tags: 
     - docker-prod
   variables:
