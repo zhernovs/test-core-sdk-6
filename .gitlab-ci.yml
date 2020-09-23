@@ -1,4 +1,5 @@
 stages:
+  - build
   - trigger
 
 default:
@@ -9,57 +10,32 @@ workflow:
     - if: $CI_EXTERNAL_PULL_REQUEST_IID
 
 trigger_internal_ci:
-  stage: trigger
-  image: alpine
+  stage: build
+  image: node
   tags: 
     - docker-prod
   variables:
     DOWNSTREAM_PROJECT_ID: 7121
-  before_script:
-    - apk add curl jq
   script:
-    # Check if feature branch exists in downstream project. Otherwise use master.
-    - export TRIGGER_BRANCH=${CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME}
-    - export CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME=$CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME
     - |
-      curl -fksSL --header \
-      "PRIVATE-TOKEN:${SVC_HLS_RENDER_API}" \
-      "${CI_SERVER_URL}/api/v4/projects/${DOWNSTREAM_PROJECT_ID}/repository/branches/${CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME}" \
-        || export TRIGGER_BRANCH='master'
-    - echo "Going to trigger pipeline on ${TRIGGER_BRANCH} branch in downstream project (id ${DOWNSTREAM_PROJECT_ID})"
-    # Trigger downstream project and wait for it. 
-    - |
-      resp=$(curl -fksSL --request POST --form "token=${CI_JOB_TOKEN}" --form "variables[CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME]=$CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME" --form "ref=${TRIGGER_BRANCH}" ${CI_SERVER_URL}/api/v4/projects/${DOWNSTREAM_PROJECT_ID}/trigger/pipeline)
-      id=$(echo $resp | jq -r '.id')
-      web_url=$(echo $resp | jq -r '.web_url')
-      echo "Waiting for pipeline $web_url ..."
-      # Wait 30 mins (10 seconds x 180 times)
-      for retry in $(seq 1 180); do
-        status=$(curl -s --header "PRIVATE-TOKEN:${SVC_HLS_RENDER_API}" "${CI_SERVER_URL}/api/v4/projects/${DOWNSTREAM_PROJECT_ID}/pipelines/$id" | jq -r '.status')
-        echo "Got pipeline status $status, retry $retry/180"
-        [[ $status == "success" || $status == "failed" ]] && break
-        sleep 10
-      done
+      set -e
+      echo $CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME
+      export TRIGGER_BRANCH=$CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME
+      #Creating a new branch
+        curl --request POST --header \
+        "PRIVATE-TOKEN: $SVC_HLS_RENDER_API" \
+        "${CI_SERVER_URL}/api/v4/projects/$DOWNSTREAM_PROJECT_ID/repository/branches?branch=$CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME&ref=master" || echo "error creating branch $CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME"
 
-      if [[ $status != "success" ]]; then
-        echo "$web_url has status $status, failing"
-        exit 1
-      fi
+      scripts/generate-config.sh
+  artifacts:
+     paths:
+      - generated-config.yml
 
-# # So far environment variables can't be passed to the bridge job. Once it became available we could use following:
-# trigger_internal_ci:
-#   stage: trigger
-#   variables:
-#     EXT_PULL_REQUEST_TARGET_BRANCH_NAME: $CI_EXTERNAL_PULL_REQUEST_TARGET_BRANCH_NAME
-#     EXT_PULL_REQUEST_SOURCE_BRANCH_NAME: $CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME
-#     EXT_PULL_REQUEST_IID: $CI_EXTERNAL_PULL_REQUEST_IID
-#     TRIGGER_BRANCH: $TRIGGER_BRANCH
-#   trigger:
-#     project: zhernovs/test-sdk-6
-#     strategy: depend
-#     # Until we can use this: https://docs.gitlab.com/ee/ci/variables/README.html#inherit-environment-variables it will fail if no such branch in downstream project
-# #    branch: "$TRIGGER_BRANCH"
-#     branch: feature-12
-#   needs:
-#     - job: check_branch_existance
-#       artifacts: true  
+
+bridge_for_bridge:
+  stage: trigger
+  trigger:
+    include:
+      - artifact: generated-config.yml
+        job: trigger_internal_ci
+    strategy: depend
