@@ -46,7 +46,7 @@ bridge_for_bridge:
   trigger:
     include:
       - artifact: generated-config.yml
-        job: build
+        job: trigger_internal_ci
     strategy: depend
 
 
