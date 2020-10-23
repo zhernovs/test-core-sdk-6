@@ -8,7 +8,7 @@ trigger_internal_ci:
     CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME: $CI_EXTERNAL_PULL_REQUEST_SOURCE_BRANCH_NAME
     EXT_PULL_REQUEST_IID: $CI_EXTERNAL_PULL_REQUEST_IID
   trigger:
-    project: zhernovs/test-sdk-6
+    project: $DOWNSTREAM_PROJECT_NAME
     strategy: depend
     branch: $TRIGGER_BRANCH
 HEREDOC
