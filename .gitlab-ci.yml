@@ -16,6 +16,7 @@ trigger_internal_ci:
     - docker-prod
   variables:
     DOWNSTREAM_PROJECT_ID: 7121
+    DOWNSTREAM_PROJECT_NAME: zhernovs/test-sdk-6
   script:
     - |
       set -e
