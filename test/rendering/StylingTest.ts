@@ -455,7 +455,7 @@ describe("MapView Styling Test", function() {
             geometry: {
                 type: "LineString",
                 coordinates: [
-                    [0.004, 0.001],
+                    [0.004, 0.002],
                     [-0.004, 0.001]
                 ]
             }
