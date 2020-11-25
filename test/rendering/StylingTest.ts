@@ -276,7 +276,7 @@ describe("MapView Styling Test", function() {
                 type: "Feature",
                 geometry: {
                     type: "Point",
-                    coordinates: [0.0, -0.002]
+                    coordinates: [0.0, -0.003]
                 },
                 properties: {
                     name: "aBcD"
