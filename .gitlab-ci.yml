@@ -1,9 +1,9 @@
+default:
+  interruptible: true
+  
 stages:
   - build
   - trigger
-
-default:
-  interruptible: true
 
 workflow:
   rules:
