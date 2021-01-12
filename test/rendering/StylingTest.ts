@@ -745,7 +745,7 @@ describe("MapView Styling Test", function() {
                 type: "Polygon",
                 coordinates: [
                     [
-                        [0.004, 0.002],
+                        [0.004, 0.003],
                         [-0.004, 0.002],
                         [-0.004, -0.002],
                         [0.004, -0.002]
